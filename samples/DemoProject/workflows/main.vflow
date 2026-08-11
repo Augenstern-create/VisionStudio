@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "name": "Main",
+  "nodes": [
+    {
+      "id": "load",
+      "type": "Image.Load",
+      "name": "\u52A0\u8F7D\u56FE\u50CF",
+      "x": 40,
+      "y": 100,
+      "parameters": {
+        "path": "images/input/input.png"
+      }
+    },
+    {
+      "id": "gray",
+      "type": "Image.Gray",
+      "name": "\u7070\u5EA6\u5316",
+      "x": 260,
+      "y": 100,
+      "parameters": {}
+    },
+    {
+      "id": "threshold",
+      "type": "Image.Threshold",
+      "name": "\u4E8C\u503C\u5316",
+      "x": 480,
+      "y": 100,
+      "parameters": {
+        "threshold": 128,
+        "maxValue": 255,
+        "mode": "Binary"
+      }
+    },
+    {
+      "id": "save",
+      "type": "Image.Save",
+      "name": "\u4FDD\u5B58\u56FE\u50CF",
+      "x": 700,
+      "y": 100,
+      "parameters": {
+        "path": "images/output/result.png"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "fromNode": "load",
+      "fromPort": "Image",
+      "toNode": "gray",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "gray",
+      "fromPort": "Image",
+      "toNode": "threshold",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "threshold",
+      "fromPort": "Image",
+      "toNode": "save",
+      "toPort": "Image"
+    }
+  ]
+}

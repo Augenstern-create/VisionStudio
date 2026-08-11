@@ -1,0 +1,80 @@
+# Build output and package restore
+**/[Bb]in/
+**/[Oo]bj/
+**/[Ll]og/
+packages/
+*.nupkg
+*.snupkg
+
+# IDE and editor state
+.vs/
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# Test and coverage output
+TestResults/
+coverage/
+coverage.*
+*.coverage
+*.coveragexml
+*.trx
+*.testlog
+
+# Generated release and installer output
+artifacts/
+publish/
+releases/
+installers/staging/
+installers/output/
+*.deb
+*.rpm
+*.msi
+*.msix
+*.appx
+
+# Runtime projects, caches and generated results
+src/VisionStudio.Web/data/
+**/.project/
+**/images/cache/
+**/images/output/
+**/snapshots/
+samples/DemoProject/images/input/
+samples/DemoProject/output/
+
+# Secrets and deployment-local configuration
+.env
+.env.*
+!.env.example
+appsettings.*.json
+!appsettings.example.json
+secrets.json
+*.pfx
+*.p12
+*.pem
+*.key
+*.snk
+
+# Logs, diagnostics and temporary files
+*.log
+*.dmp
+*.tmp
+*.temp
+*.bak
+*.orig
+*.pid
+core
+core.*
+
+# Operating system files
+.DS_Store
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+

@@ -1,0 +1,170 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="VisionStudio.App.App"
+             RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#181818" />
+    <SolidColorBrush x:Key="WorkbenchBrush" Color="#1E1E1E" />
+    <SolidColorBrush x:Key="SideBarBrush" Color="#252526" />
+    <SolidColorBrush x:Key="PanelBrush" Color="#202020" />
+    <SolidColorBrush x:Key="TitleBarBrush" Color="#181818" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#3C3C3C" />
+    <SolidColorBrush x:Key="SubtleBorderBrush" Color="#2B2B2B" />
+    <SolidColorBrush x:Key="PrimaryBrush" Color="#007ACC" />
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#1C8DCE" />
+    <SolidColorBrush x:Key="TextBrush" Color="#D4D4D4" />
+    <SolidColorBrush x:Key="MutedTextBrush" Color="#969696" />
+    <SolidColorBrush x:Key="HoverBrush" Color="#2A2D2E" />
+    <SolidColorBrush x:Key="SelectionBrush" Color="#37373D" />
+    <SolidColorBrush x:Key="ControlBrush" Color="#2D2D30" />
+    <SolidColorBrush x:Key="ControlHoverBrush" Color="#3A3A3D" />
+    <SolidColorBrush x:Key="ControlPressedBrush" Color="#454549" />
+    <SolidColorBrush x:Key="ControlBorderBrush" Color="#454545" />
+    <SolidColorBrush x:Key="InputBrush" Color="#3C3C3C" />
+    <SolidColorBrush x:Key="ProjectCardBrush" Color="#202020" />
+    <SolidColorBrush x:Key="PreviewBrush" Color="#181818" />
+    <SolidColorBrush x:Key="HeaderBrush" Color="#252526" />
+    <SolidColorBrush x:Key="InspectorCardBrush" Color="#202020" />
+    <SolidColorBrush x:Key="EmptyIconBrush" Color="#5A5A5A" />
+    <SolidColorBrush x:Key="StatusBarBrush" Color="#007ACC" />
+    <SolidColorBrush x:Key="FeatureOneBrush" Color="#9CDCFE" />
+    <SolidColorBrush x:Key="FeatureTwoBrush" Color="#B5CEA8" />
+    <SolidColorBrush x:Key="FeatureThreeBrush" Color="#CE9178" />
+  </Application.Resources>
+  <Application.Styles>
+    <FluentTheme DensityStyle="Compact" />
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="FontFamily" Value="avares://Avalonia.Fonts.Inter/Assets#Inter" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Padding" Value="12,5" />
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="Background" Value="{DynamicResource ControlBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ControlBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Button:pointerover">
+      <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ControlBorderBrush}" />
+    </Style>
+    <Style Selector="Button:pressed">
+      <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.primary:pointerover">
+      <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="Button.toolbar">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="Padding" Value="9,4" />
+    </Style>
+    <Style Selector="Button.toolbar:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.toolbar.primary">
+      <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Padding" Value="11,4" />
+    </Style>
+    <Style Selector="Button.toolbar.primary:pointerover">
+      <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="Button.operatorItem">
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="Padding" Value="28,4,10,4" />
+    </Style>
+    <Style Selector="Button.operatorItem:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.projectCard">
+      <Setter Property="Background" Value="{DynamicResource ProjectCardBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ControlBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="22" />
+    </Style>
+    <Style Selector="Button.projectCard:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="Background" Value="{DynamicResource InputBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ControlBorderBrush}" />
+      <Setter Property="CornerRadius" Value="2" />
+      <Setter Property="SelectionBrush" Value="{DynamicResource PrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBox:focus">
+      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBox.titleSearch">
+      <Setter Property="Background" Value="{DynamicResource ControlBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ControlBorderBrush}" />
+      <Setter Property="CornerRadius" Value="5" />
+    </Style>
+    <Style Selector="TextBox.titleSearch:pointerover">
+      <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+    </Style>
+    <Style Selector="ComboBox">
+      <Setter Property="Background" Value="{DynamicResource ControlBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ControlBorderBrush}" />
+      <Setter Property="CornerRadius" Value="3" />
+    </Style>
+    <Style Selector="ListBox">
+      <Setter Property="Background" Value="{DynamicResource WorkbenchBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="ListBoxItem:selected">
+      <Setter Property="Background" Value="{DynamicResource SelectionBrush}" />
+    </Style>
+    <Style Selector="Expander.paletteCategory">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0" />
+    </Style>
+    <Style Selector="Expander.paletteCategory /template/ ToggleButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="Padding" Value="10,4" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Expander.paletteCategory /template/ ToggleButton:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="MenuItem.topMenuItem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="9,5" />
+    </Style>
+    <Style Selector="MenuItem.topMenuItem:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="ScrollBar">
+      <Setter Property="Opacity" Value="0.72" />
+    </Style>
+    <Style Selector="TextBlock.panelTitle">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Separator">
+      <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+    </Style>
+  </Application.Styles>
+</Application>

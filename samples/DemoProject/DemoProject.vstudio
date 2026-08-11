@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "3f423b2a-9ed1-4fcc-90d5-4b4e5c574e41",
+  "name": "DemoProject",
+  "description": "Load, grayscale, threshold and save demonstration.",
+  "mainWorkflow": "workflows/main.vflow",
+  "createdAt": "2026-08-11T00:00:00+00:00",
+  "modifiedAt": "2026-08-11T20:12:17.3282385+00:00",
+  "tags": [
+    "demo"
+  ]
+}

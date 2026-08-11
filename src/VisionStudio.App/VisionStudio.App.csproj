@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationIcon>Assets\VisionStudio.ico</ApplicationIcon>
+    <AssemblyName>VisionStudio</AssemblyName>
+    <RootNamespace>VisionStudio.App</RootNamespace>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.0" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.0" />
+    <PackageReference Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" Condition="'$(RuntimeIdentifier)' == 'ubuntu-x64'" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VisionStudio.Core\VisionStudio.Core.csproj" />
+    <ProjectReference Include="..\VisionStudio.Operators.OpenCv\VisionStudio.Operators.OpenCv.csproj" />
+    <ProjectReference Include="..\VisionStudio.CodeGen\VisionStudio.CodeGen.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\Strings.*.json" CopyToOutputDirectory="PreserveNewest" />
+    <AvaloniaResource Include="Assets\VisionStudio.ico" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == 'ubuntu-x64'">
+    <RuntimeHostConfigurationOption Include="System.Globalization.AppLocalIcu" Value="72.1.0.3" />
+  </ItemGroup>
+</Project>

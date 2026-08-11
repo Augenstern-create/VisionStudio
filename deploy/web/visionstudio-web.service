@@ -1,0 +1,23 @@
+[Unit]
+Description=Vision Studio Web
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+StateDirectory=visionstudio-web
+WorkingDirectory=/opt/visionstudio-web
+EnvironmentFile=/opt/visionstudio-web/.env
+ExecStart=/opt/visionstudio-web/VisionStudio.Web
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/visionstudio-web
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

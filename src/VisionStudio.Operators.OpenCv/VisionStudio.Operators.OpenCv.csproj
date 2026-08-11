@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\VisionStudio.Core\VisionStudio.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Emgu.CV" Version="$(EmguCvVersion)" />
+    <PackageReference Include="Emgu.CV.runtime.windows" Version="$(EmguCvVersion)"
+                      Condition="$([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win-')) Or ('$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Windows')))" />
+    <PackageReference Include="Emgu.CV.runtime.mini.ubuntu-24.04-x64" Version="$(EmguCvVersion)"
+                      Condition="'$(RuntimeIdentifier)' == 'ubuntu-x64' Or ('$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Linux')))" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
