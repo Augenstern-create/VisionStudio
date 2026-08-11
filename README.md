@@ -8,6 +8,7 @@
   <img alt="Avalonia" src="https://img.shields.io/badge/UI-Avalonia-8B44AC">
   <img alt="OpenCV" src="https://img.shields.io/badge/Vision-OpenCV-5C3EE8">
   <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20Ubuntu%20%7C%20Web-1685D1">
+  <img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-green">
 </div>
 
 Vision Studio 用节点和强类型端口组织图像处理流程。你可以拖拽连接算子、调整参数并即时查看结果，也可以把工作流导出为 C# 源码。项目同时提供 Avalonia 桌面编辑器、响应式 Web 工作台、命令行工具和面向未来 AI 助手的自动化接口。
@@ -180,4 +181,4 @@ ProjectName/
 
 ## 许可证
 
-仓库目前尚未包含开源许可证。公开发布前，维护者需要根据预期使用范围选择并添加 `LICENSE`（常见选择为 MIT 或 Apache-2.0），同时核对 Avalonia、Emgu CV、OpenCV 及各平台原生运行库的许可证和再分发要求。仅将仓库设为 Public 并不会自动授予开源使用权。
+本项目以 [Apache License 2.0](LICENSE) 发布。第三方组件仍分别适用其自身许可证；构建或分发桌面端、Web 端及安装包前，请同时核对 Avalonia、Emgu CV、OpenCV 与各平台原生运行库的许可和再分发要求。
