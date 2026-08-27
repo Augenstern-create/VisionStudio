@@ -13,6 +13,7 @@
 
 Vision Studio 用节点和强类型端口组织图像处理流程。你可以拖拽连接算子、调整参数并即时查看结果，也可以把工作流导出为 C# 源码。项目同时提供 Avalonia 桌面编辑器、响应式 Web 工作台、命令行工具和可选的本地 AI 插件接口。
 
+![Vision Studio 工作流编辑器](docs/assets/home-dark.png)
 ![Vision Studio 工作流编辑器](docs/assets/editor-dark.png)
 
 ## 功能亮点
