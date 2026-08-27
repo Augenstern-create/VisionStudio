@@ -6,14 +6,20 @@ $testRoot = Join-Path $temporaryBase ('VisionStudioUi-' + [Guid]::NewGuid().ToSt
 $projectRoot = Join-Path $testRoot '自动创建的项目文件夹'
 $solution = Join-Path $workspaceRoot 'VisionStudio.sln'
 $cliDll = Join-Path $workspaceRoot 'src\VisionStudio.Cli\bin\Release\net9.0\VisionStudio.Cli.dll'
-$appExe = Join-Path $workspaceRoot 'src\VisionStudio.App\bin\Release\net9.0\VisionStudio.App.exe'
+$appExe = Join-Path $workspaceRoot 'src\VisionStudio.App\bin\Release\net9.0\VisionStudio.exe'
 $appProcess = $null
+$fakeAiJob = $null
 $previousDisableOpenFolder = $env:VISIONSTUDIO_DISABLE_OPEN_FOLDER
 $previousUiLanguage = $env:VISIONSTUDIO_UI_LANGUAGE
 $previousUiTheme = $env:VISIONSTUDIO_UI_THEME
+$previousTestMode = $env:VISIONSTUDIO_TEST_MODE
+$previousTestConfig = $env:VISIONSTUDIO_TEST_CONFIG_DIRECTORY
+$previousTestEndpoint = $env:VISIONSTUDIO_AI_TEST_ENDPOINT
 $env:VISIONSTUDIO_DISABLE_OPEN_FOLDER = '1'
 $env:VISIONSTUDIO_UI_LANGUAGE = 'zh-CN'
 $env:VISIONSTUDIO_UI_THEME = 'Dark'
+$env:VISIONSTUDIO_TEST_MODE = '1'
+$env:VISIONSTUDIO_TEST_CONFIG_DIRECTORY = Join-Path $testRoot 'isolated-config'
 
 function Invoke-DotNet([string[]]$Arguments) {
     & dotnet @Arguments
@@ -43,6 +49,12 @@ function Find-VisibleElementByName($Root, [string]$Name) {
     }
 }
 
+function Find-VisibleElementContainingName($Root, [string]$Text) {
+    return $Root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition) |
+        Where-Object { !$_.Current.IsOffscreen -and $_.Current.Name.Contains($Text, [System.StringComparison]::CurrentCulture) } |
+        Select-Object -First 1
+}
+
 function Find-GraphNode($Root, [string]$Name) {
     $condition = [System.Windows.Automation.PropertyCondition]::new(
         [System.Windows.Automation.AutomationElement]::NameProperty,
@@ -68,6 +80,38 @@ function Click-AutomationElement($Element, [string]$Label = 'element') {
     [VisionStudioNativeMouse]::SetCursorPos([int]($bounds.Left + $bounds.Width / 2), [int]($bounds.Top + $bounds.Height / 2)) | Out-Null
     [VisionStudioNativeMouse]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
     [VisionStudioNativeMouse]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
+}
+
+function RightClick-ScreenPoint([int]$X, [int]$Y) {
+    [VisionStudioNativeMouse]::SetCursorPos($X, $Y) | Out-Null
+    [VisionStudioNativeMouse]::mouse_event(0x0008, 0, 0, 0, [UIntPtr]::Zero)
+    [VisionStudioNativeMouse]::mouse_event(0x0010, 0, 0, 0, [UIntPtr]::Zero)
+}
+
+function Get-FirstConnectionScreenPoint($CanvasElement, [string]$WorkflowPath) {
+    $saved = Get-Content -LiteralPath $WorkflowPath -Raw | ConvertFrom-Json
+    $edge = $saved.connections | Select-Object -First 1
+    if ($null -eq $edge) { throw 'Workflow has no connection for interaction testing.' }
+    $source = $saved.nodes | Where-Object { $_.id -eq $edge.fromNode } | Select-Object -First 1
+    if ($null -eq $source) { throw 'Connection source node is missing.' }
+    $bounds = $CanvasElement.Current.BoundingRectangle
+    $scale = [VisionStudioNativeMouse]::GetDpiForWindow($script:windowHandle) / 96.0
+    return [pscustomobject]@{
+        X = [int]($bounds.Left + ([double]$source.x + 184 + 12) * $scale)
+        Y = [int]($bounds.Top + ([double]$source.y + 56) * $scale)
+    }
+}
+
+function Open-FirstConnectionContextMenu($Window, $CanvasElement, [string]$WorkflowPath) {
+    # Port zero is at node Y + HeaderHeight(36) + body offset(18). Clicking
+    # twelve pixels after the output port lands on the first horizontal segment.
+    $point = Get-FirstConnectionScreenPoint $CanvasElement $WorkflowPath
+    [VisionStudioNativeMouse]::SetForegroundWindow($script:windowHandle) | Out-Null
+    RightClick-ScreenPoint $point.X $point.Y
+    Start-Sleep -Milliseconds 350
+    $item = Find-VisibleElementByName ([System.Windows.Automation.AutomationElement]::RootElement) '选择后续节点'
+    if ($null -eq $item) { throw "Connection context menu did not open at screen point $($point.X),$($point.Y)." }
+    return $item
 }
 
 function Invoke-MenuCommand($Window, [string]$MenuName, [string]$CommandName, [string]$Label) {
@@ -117,6 +161,51 @@ function Drag-ScreenPoint([int]$FromX, [int]$FromY, [int]$ToX, [int]$ToY) {
     [VisionStudioNativeMouse]::SendMessage($script:windowHandle, 0x0202, [IntPtr]0, $toParam) | Out-Null
 }
 
+function Drag-WindowTitleBar([int]$FromX, [int]$FromY, [int]$ToX, [int]$ToY) {
+    [VisionStudioNativeMouse]::SetForegroundWindow($script:windowHandle) | Out-Null
+    Start-Sleep -Milliseconds 180
+    [VisionStudioNativeMouse]::SetCursorPos($FromX, $FromY) | Out-Null
+    [VisionStudioNativeMouse]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
+    Start-Sleep -Milliseconds 180
+    for ($step = 1; $step -le 8; $step++) {
+        $x = [int]($FromX + ($ToX - $FromX) * $step / 8)
+        $y = [int]($FromY + ($ToY - $FromY) * $step / 8)
+        [VisionStudioNativeMouse]::SetCursorPos($x, $y) | Out-Null
+        Start-Sleep -Milliseconds 45
+    }
+    [VisionStudioNativeMouse]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
+}
+
+function Assert-ScreenColorNear($Element, [string]$ExpectedHex, [string]$Label) {
+    if ($null -eq $Element) { throw "Expected automation element was not found: $Label" }
+    $bounds = $Element.Current.BoundingRectangle
+    $expected = [System.Drawing.ColorTranslator]::FromHtml($ExpectedHex)
+    $left = [int][Math]::Floor($bounds.Left)
+    $top = [int][Math]::Floor($bounds.Top + 8)
+    $height = [Math]::Max(1, [int][Math]::Floor($bounds.Height - 16))
+    $bitmap = [System.Drawing.Bitmap]::new(6, $height)
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+    try {
+        $graphics.CopyFromScreen($left, $top, 0, 0, $bitmap.Size)
+        for ($x = 0; $x -lt $bitmap.Width; $x++) {
+            for ($y = 0; $y -lt $bitmap.Height; $y++) {
+                $actual = $bitmap.GetPixel($x, $y)
+                if ([Math]::Abs([int]$actual.R - [int]$expected.R) -le 8 -and
+                    [Math]::Abs([int]$actual.G - [int]$expected.G) -le 8 -and
+                    [Math]::Abs([int]$actual.B - [int]$expected.B) -le 8) {
+                    Write-Output "$Label rendered $ExpectedHex."
+                    return
+                }
+            }
+        }
+    }
+    finally {
+        $graphics.Dispose()
+        $bitmap.Dispose()
+    }
+    throw "$Label did not render expected theme color $ExpectedHex."
+}
+
 function Press-Key([byte]$VirtualKey) {
     [VisionStudioNativeMouse]::keybd_event($VirtualKey, 0, 0, [UIntPtr]::Zero)
     [VisionStudioNativeMouse]::keybd_event($VirtualKey, 0, 2, [UIntPtr]::Zero)
@@ -131,6 +220,40 @@ function Press-CtrlZ {
 
 try {
     New-Item -ItemType Directory -Path $testRoot | Out-Null
+    $portProbe = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+    $portProbe.Start()
+    $fakeAiPort = ([System.Net.IPEndPoint]$portProbe.LocalEndpoint).Port
+    $portProbe.Stop()
+    $env:VISIONSTUDIO_AI_TEST_ENDPOINT = "http://127.0.0.1:$fakeAiPort"
+    $fakeAiJob = Start-Job -ArgumentList $fakeAiPort -ScriptBlock {
+        param($Port)
+        $listener = [System.Net.HttpListener]::new()
+        $listener.Prefixes.Add("http://127.0.0.1:$Port/")
+        $listener.Start()
+        $requestCount = 0
+        try {
+            while ($listener.IsListening) {
+                $context = $listener.GetContext()
+                $reader = [System.IO.StreamReader]::new($context.Request.InputStream, $context.Request.ContentEncoding)
+                $requestBody = $reader.ReadToEnd()
+                $reader.Dispose()
+                $requestCount++
+                $plan = if ($requestCount -le 3) {
+                    '{"summary":"故意返回的不完整计划","actions":[]}'
+                } else {
+                    '{"type":"add_pipeline","fromNode":"model_wrong_source","operatorIds":["Image.Gray","Image.GaussianBlur"],"nodeIds":["ui_gray","ui_blur"]}'
+                }
+                $payload = @{ choices = @(@{ message = @{ content = $plan } }) } | ConvertTo-Json -Depth 6 -Compress
+                $bytes = [System.Text.Encoding]::UTF8.GetBytes($payload)
+                $context.Response.StatusCode = 200
+                $context.Response.ContentType = 'application/json'
+                $context.Response.ContentLength64 = $bytes.Length
+                $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+                $context.Response.Close()
+            }
+        } finally { $listener.Close() }
+    }
+    Start-Sleep -Milliseconds 500
     Invoke-DotNet @('build', $solution, '-c', 'Release', '--nologo')
     Invoke-DotNet @($cliDll, 'new', $projectRoot, '自动化视觉项目')
     $projectFile = Get-ChildItem -LiteralPath $projectRoot -Filter '*.vstudio' | Select-Object -First 1
@@ -149,18 +272,22 @@ try {
 
     Add-Type -AssemblyName UIAutomationClient
     Add-Type -AssemblyName UIAutomationTypes
+    Add-Type -AssemblyName System.Drawing
     Add-Type @'
 using System;
 using System.Runtime.InteropServices;
 public static class VisionStudioNativeMouse
 {
     [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X; public int Y; }
+    [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr window, ref RECT rect);
     [DllImport("user32.dll")] public static extern bool ScreenToClient(IntPtr window, ref POINT point);
     [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr window);
     [DllImport("user32.dll")] public static extern void keybd_event(byte virtualKey, byte scanCode, uint flags, UIntPtr extraInfo);
     [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll")] public static extern void mouse_event(uint flags, uint dx, uint dy, uint data, UIntPtr extraInfo);
+    [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr window);
 }
 '@
 
@@ -179,7 +306,7 @@ public static class VisionStudioNativeMouse
     $extensionKey = Get-ItemProperty -LiteralPath 'Registry::HKEY_CURRENT_USER\Software\Classes\.vstudio'
     if ($extensionKey.'(default)' -ne 'VisionStudio.Project') { throw 'The .vstudio extension was not associated with Vision Studio.' }
     $openCommand = (Get-ItemProperty -LiteralPath 'Registry::HKEY_CURRENT_USER\Software\Classes\VisionStudio.Project\shell\open\command').'(default)'
-    if ($openCommand -notlike '*VisionStudio.App.exe*"%1"*') { throw "Invalid .vstudio open command: $openCommand" }
+    if ($openCommand -notlike '*VisionStudio.exe*"%1"*') { throw "Invalid .vstudio open command: $openCommand" }
 
     $script:windowHandle = $appProcess.MainWindowHandle
     [VisionStudioNativeMouse]::SetForegroundWindow($appProcess.MainWindowHandle) | Out-Null
@@ -206,9 +333,27 @@ public static class VisionStudioNativeMouse
     $searchCenter = $searchRect.Left + $searchRect.Width / 2
     if ([Math]::Abs($windowCenter - $searchCenter) -gt 45) { throw 'The operator search box is not centered in the title bar.' }
 
+    $dragBefore = $window.Current.BoundingRectangle
+    $titleScale = [VisionStudioNativeMouse]::GetDpiForWindow($script:windowHandle) / 96.0
+    # The final title-bar column is 245 DIPs wide. Its rightmost ~145 DIPs are
+    # reserved for native caption buttons, so the center of the remaining strip
+    # is a deterministic drag target that cannot overlap the centered search box.
+    $dragFromX = [int]($dragBefore.Right - 195 * $titleScale)
+    $dragFromY = [int]($dragBefore.Top + 22 * $titleScale)
+    Drag-WindowTitleBar $dragFromX $dragFromY ($dragFromX + 70) ($dragFromY + 40)
+    Start-Sleep -Milliseconds 500
+    $dragAfter = $window.Current.BoundingRectangle
+    if ([Math]::Abs($dragAfter.Left - $dragBefore.Left) -lt 30 -or [Math]::Abs($dragAfter.Top - $dragBefore.Top) -lt 20) {
+        throw "Dragging the editor title bar did not move the window. Before=$($dragBefore.Left),$($dragBefore.Top); After=$($dragAfter.Left),$($dragAfter.Top)."
+    }
+    Write-Output "Title-bar drag moved the window from $([int]$dragBefore.Left),$([int]$dragBefore.Top) to $([int]$dragAfter.Left),$([int]$dragAfter.Top)."
+
     Invoke-NestedMenuCommand $window '视图' '主题' '白色主题' 'Switch to light theme'
+    Assert-ScreenColorNear (Find-ElementByName $window '▦') '#0067B8' 'Light activity selection border'
     Invoke-NestedMenuCommand $window '视图' '主题' '渐变主题' 'Switch to gradient theme'
+    Assert-ScreenColorNear (Find-ElementByName $window '▦') '#6C63FF' 'Gradient activity selection border'
     Invoke-NestedMenuCommand $window '视图' '主题' '黑色主题' 'Restore dark theme'
+    Assert-ScreenColorNear (Find-ElementByName $window '▦') '#007ACC' 'Dark activity selection border'
     Invoke-NestedMenuCommand $window '视图' '语言' 'English' 'Switch editor to English'
     if ($null -eq (Find-ElementByName $window 'Search operators…')) { throw 'Editor language menu did not apply English.' }
     Invoke-NestedMenuCommand $window 'View' 'Language' 'Chinese' 'Restore editor to Chinese'
@@ -222,6 +367,68 @@ public static class VisionStudioNativeMouse
     }
     Invoke-Element (Find-ElementByName $aboutDialog '关闭') 'Close About dialog'
     Start-Sleep -Milliseconds 300
+
+    Invoke-MenuCommand $window '文件' '设置' 'Settings dialog'
+    $settingsDialog = Find-ElementByName ([System.Windows.Automation.AutomationElement]::RootElement) '设置'
+    if ($null -eq $settingsDialog -or $null -eq (Find-ElementByName $settingsDialog '本地模型') -or $null -eq (Find-ElementByName $settingsDialog '远程模型')) {
+        throw 'Settings dialog did not expose separate local and remote AI model management.'
+    }
+    Invoke-Element (Find-ElementByName $settingsDialog '取消') 'Close Settings dialog'
+    Start-Sleep -Milliseconds 300
+    Invoke-Element (Find-VisibleElementByName $window '✦') 'Open embedded AI activity'
+    Start-Sleep -Milliseconds 700
+    if ($null -eq (Find-VisibleElementByName $window 'AI 助手')) { throw 'Embedded AI sidebar did not appear.' }
+    $aiConversation = Find-ElementByName $window 'AI 对话'
+    if ($null -eq $aiConversation) { throw 'AI conversation panel was not exposed.' }
+
+    # Send through the real AI text box/button against an isolated local fake
+    # OpenAI endpoint. First force an error and verify that the user and error
+    # remain two distinct persisted/rendered turns.
+    $aiPrompt = Find-VisibleElementByName $window '描述需求，可写 IMG-01、图片编号或节点名称，也可把图像节点编号拖到这里…'
+    if ($null -eq $aiPrompt) { throw 'AI prompt text box was not exposed.' }
+    $aiPromptValue = [System.Windows.Automation.ValuePattern]$aiPrompt.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+    $errorPrompt = '触发错误测试：请分析 IMG-01'
+    $aiPromptValue.SetValue($errorPrompt)
+    Invoke-Element (Find-VisibleElementByName $window '发送') 'Send deterministic AI error turn'
+    $contextFile = Join-Path $env:VISIONSTUDIO_TEST_CONFIG_DIRECTORY 'ai-contexts.json'
+    $aiDeadline = [DateTime]::UtcNow.AddSeconds(12)
+    do {
+        Start-Sleep -Milliseconds 250
+        if (Test-Path -LiteralPath $contextFile) {
+            $storedContexts = Get-Content -LiteralPath $contextFile -Raw | ConvertFrom-Json
+            $contextProperty = $storedContexts.PSObject.Properties | Select-Object -First 1
+            $storedTurns = @($contextProperty.Value)
+        }
+    } while (($null -eq $storedTurns -or $storedTurns.Count -lt 2) -and [DateTime]::UtcNow -lt $aiDeadline)
+    if ($storedTurns.Count -lt 2 -or $storedTurns[-2].role -ne 'user' -or $storedTurns[-1].role -ne 'assistant') {
+        throw 'AI context did not persist user then assistant error as separate turns.'
+    }
+    $visibleUserTurn = Find-ElementByName $aiConversation ("你: " + $storedTurns[-2].content)
+    $visibleErrorTurn = Find-ElementByName $aiConversation ("AI 助手: " + $storedTurns[-1].content)
+    if ($null -eq $visibleUserTurn -or $null -eq $visibleErrorTurn) { throw 'AI error path did not render distinct user and assistant error bubbles.' }
+
+    # Then return the exact single-action shape from the reported failure and
+    # verify the real chat renders host-generated node and parameter details.
+    $successPrompt = '为 IMG-01 创建灰度和平滑流程'
+    $aiPromptValue.SetValue($successPrompt)
+    Invoke-Element (Find-VisibleElementByName $window '发送') 'Send deterministic AI single-action plan'
+    $aiDeadline = [DateTime]::UtcNow.AddSeconds(12)
+    do {
+        Start-Sleep -Milliseconds 250
+        $storedContexts = Get-Content -LiteralPath $contextFile -Raw | ConvertFrom-Json
+        $contextProperty = $storedContexts.PSObject.Properties | Select-Object -First 1
+        $storedTurns = @($contextProperty.Value)
+    } while ($storedTurns.Count -lt 4 -and [DateTime]::UtcNow -lt $aiDeadline)
+    $suggestionText = $storedTurns[-1].content
+    $detailedSuggestion = Find-ElementByName $aiConversation ("AI 助手: " + $suggestionText)
+    if ($null -eq $detailedSuggestion -or !$suggestionText.Contains('节点与参数：') -or !$suggestionText.Contains('kernelSize=')) {
+        throw 'AI suggestion did not render node, interface, parameter, and connection details.'
+    }
+    Invoke-Element (Find-VisibleElementByName $window '▦') 'Return to Operators activity'
+    Start-Sleep -Milliseconds 250
+    if ($null -eq (Find-VisibleElementByName $window '算子')) { throw 'Operators sidebar did not reappear.' }
+    $appProcess.Refresh()
+    if ($appProcess.HasExited) { throw 'App exited while switching activity bar views.' }
 
     # Click the same Threshold node twice after a successful preview. This is the
     # regression path for replacing a bitmap while the renderer owns the old frame.
@@ -270,12 +477,52 @@ public static class VisionStudioNativeMouse
     $thresholdAfterUndo = $workflowAfterUndo.nodes | Where-Object { $_.type -eq 'Image.Threshold' }
     if ([double]$thresholdAfterUndo.parameters.threshold -ne 128) { throw 'Ctrl+Z did not restore the previous Threshold value.' }
 
+    # Exercise the real mouse/context-menu route for downstream branch actions.
+    # Each command is invoked from a right-click on the rendered connection, not
+    # by calling GraphCanvas methods directly.
+    $nodesBeforeBranchActions = @($workflowAfterUndo.nodes).Count
+    $connectionsBeforeBranchActions = @($workflowAfterUndo.connections).Count
+    Click-AutomationElement (Open-FirstConnectionContextMenu $window $canvas $workflowPath) 'Select downstream nodes'
+    Start-Sleep -Milliseconds 250
+
+    Open-FirstConnectionContextMenu $window $canvas $workflowPath | Out-Null
+    Click-AutomationElement (Find-VisibleElementByName ([System.Windows.Automation.AutomationElement]::RootElement) '整理后续节点') 'Layout downstream nodes'
+    Start-Sleep -Milliseconds 500
+    Invoke-MenuCommand $window '文件' '保存项目' 'Save downstream layout'
+    Start-Sleep -Milliseconds 700
+    $layoutWorkflow = Get-Content -LiteralPath $workflowPath -Raw | ConvertFrom-Json
+    $firstLayoutEdge = $layoutWorkflow.connections | Select-Object -First 1
+    $layoutFrom = $layoutWorkflow.nodes | Where-Object { $_.id -eq $firstLayoutEdge.fromNode }
+    $layoutTo = $layoutWorkflow.nodes | Where-Object { $_.id -eq $firstLayoutEdge.toNode }
+    if ([double]$layoutTo.x -le [double]$layoutFrom.x) { throw 'Downstream layout did not place the target after its source.' }
+
+    Open-FirstConnectionContextMenu $window $canvas $workflowPath | Out-Null
+    Click-AutomationElement (Find-VisibleElementByName ([System.Windows.Automation.AutomationElement]::RootElement) '删除后续节点') 'Delete downstream nodes'
+    Start-Sleep -Milliseconds 500
+    Invoke-MenuCommand $window '文件' '保存项目' 'Save downstream deletion'
+    Start-Sleep -Milliseconds 700
+    $deletedBranchWorkflow = Get-Content -LiteralPath $workflowPath -Raw | ConvertFrom-Json
+    if (@($deletedBranchWorkflow.nodes).Count -ge $nodesBeforeBranchActions) { throw 'Downstream delete did not remove any node.' }
+    if (@($deletedBranchWorkflow.connections).Count -ge $connectionsBeforeBranchActions) { throw 'Downstream delete did not remove branch connections.' }
+    [VisionStudioNativeMouse]::SetForegroundWindow($appProcess.MainWindowHandle) | Out-Null
+    Press-CtrlZ
+    Start-Sleep -Milliseconds 500
+    Invoke-MenuCommand $window '文件' '保存项目' 'Restore downstream deletion'
+    Start-Sleep -Milliseconds 700
+    $restoredBranchWorkflow = Get-Content -LiteralPath $workflowPath -Raw | ConvertFrom-Json
+    if (@($restoredBranchWorkflow.nodes).Count -ne $nodesBeforeBranchActions -or @($restoredBranchWorkflow.connections).Count -ne $connectionsBeforeBranchActions) {
+        throw 'Ctrl+Z did not restore the downstream branch deletion.'
+    }
+
     # Select the first connection through its accessibility peer, delete it with the
     # same Delete path used by mouse selection, then restore it with Ctrl+Z.
     $allElements = $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
     $connectionElement = $allElements | Where-Object { $_.Current.AutomationId.StartsWith('connection-', [System.StringComparison]::Ordinal) } | Select-Object -First 1
     if ($null -eq $connectionElement) { throw 'Connection automation element was not exposed.' }
-    Invoke-Element $connectionElement 'Select connection'
+    $connectionPoint = Get-FirstConnectionScreenPoint $canvas $workflowPath
+    # Move away from the output port so the node/port hit regions cannot win over
+    # the connection's deliberately wider hit-test path.
+    Click-ScreenPoint ($connectionPoint.X + 28) $connectionPoint.Y
     Start-Sleep -Milliseconds 200
     Press-Key 0x2E
     Start-Sleep -Milliseconds 300
@@ -284,6 +531,7 @@ public static class VisionStudioNativeMouse
 
     $workflow = Get-Content -LiteralPath $workflowPath -Raw | ConvertFrom-Json
     if ($workflow.connections.Count -ne 2) { throw 'Selected connection was not deleted.' }
+    if ($workflow.nodes.Count -ne $nodesBeforeBranchActions) { throw 'Deleting a selected connection also deleted a node.' }
     [VisionStudioNativeMouse]::SetForegroundWindow($appProcess.MainWindowHandle) | Out-Null
     Press-CtrlZ
     Start-Sleep -Milliseconds 400
@@ -308,6 +556,7 @@ public static class VisionStudioNativeMouse
     if ((Get-Item -LiteralPath $workflowPath).LastWriteTimeUtc -le $mainWorkflowBeforeExport) {
         throw 'Automatic save did not persist the main workflow.'
     }
+
     $operationLog = Join-Path $projectRoot '.project\operations.jsonl'
     if (!(Test-Path -LiteralPath $operationLog)) { throw 'Operation log was not persisted.' }
     $operationActions = Get-Content -LiteralPath $operationLog | ForEach-Object { ($_ | ConvertFrom-Json).action }
@@ -389,7 +638,7 @@ public static class VisionStudioNativeMouse
     if (!(Test-Path -LiteralPath (Join-Path $projectRoot 'images\output\cli-result.png'))) { throw 'CLI run did not create output.' }
     if (!(Test-Path -LiteralPath (Join-Path $projectRoot 'generated\Algorithm.cs'))) { throw 'C# export did not create output.' }
 
-    Write-Output 'UI workflow suite passed: menus/about, folders, double click, cache, property edit, Ctrl+Z, line selection/delete/undo, operation log, automatic export, close folder and CLI.'
+    Write-Output 'UI workflow suite passed: menus/about, folders, double click, cache, property edit, Ctrl+Z, real connection context-menu branch select/layout/delete, line delete/undo, operation log, export, close folder and CLI.'
 }
 finally {
     if ($null -eq $previousDisableOpenFolder) { Remove-Item Env:VISIONSTUDIO_DISABLE_OPEN_FOLDER -ErrorAction SilentlyContinue }
@@ -398,6 +647,16 @@ finally {
     else { $env:VISIONSTUDIO_UI_LANGUAGE = $previousUiLanguage }
     if ($null -eq $previousUiTheme) { Remove-Item Env:VISIONSTUDIO_UI_THEME -ErrorAction SilentlyContinue }
     else { $env:VISIONSTUDIO_UI_THEME = $previousUiTheme }
+    if ($null -eq $previousTestMode) { Remove-Item Env:VISIONSTUDIO_TEST_MODE -ErrorAction SilentlyContinue }
+    else { $env:VISIONSTUDIO_TEST_MODE = $previousTestMode }
+    if ($null -eq $previousTestConfig) { Remove-Item Env:VISIONSTUDIO_TEST_CONFIG_DIRECTORY -ErrorAction SilentlyContinue }
+    else { $env:VISIONSTUDIO_TEST_CONFIG_DIRECTORY = $previousTestConfig }
+    if ($null -eq $previousTestEndpoint) { Remove-Item Env:VISIONSTUDIO_AI_TEST_ENDPOINT -ErrorAction SilentlyContinue }
+    else { $env:VISIONSTUDIO_AI_TEST_ENDPOINT = $previousTestEndpoint }
+    if ($null -ne $fakeAiJob) {
+        Stop-Job $fakeAiJob -ErrorAction SilentlyContinue
+        Remove-Job $fakeAiJob -Force -ErrorAction SilentlyContinue
+    }
     if ($null -ne $appProcess) {
         $appProcess.Refresh()
         if (!$appProcess.HasExited) { Stop-Process -Id $appProcess.Id }

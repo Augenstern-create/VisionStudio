@@ -1,0 +1,18 @@
+[
+  {
+    "id": "standard-qwen25-vl-3b-q4",
+    "displayName": "Vision Studio 标准模型（Qwen2.5-VL 3B Q4）",
+    "modelFileName": "Qwen2.5-VL-3B-Instruct-Q4_K_M.gguf",
+    "mmprojFileName": "mmproj-Qwen2.5-VL-3B-Instruct-Q8_0.gguf",
+    "modelId": "qwen2.5-vl-3b-instruct",
+    "downloadUrl": "https://huggingface.co/ggml-org/Qwen2.5-VL-3B-Instruct-GGUF/resolve/5037fcf163dd95d1e41d1974465f0898ed108ca2/Qwen2.5-VL-3B-Instruct-Q4_K_M.gguf?download=true",
+    "mmprojDownloadUrl": "https://huggingface.co/ggml-org/Qwen2.5-VL-3B-Instruct-GGUF/resolve/5037fcf163dd95d1e41d1974465f0898ed108ca2/mmproj-Qwen2.5-VL-3B-Instruct-Q8_0.gguf?download=true",
+    "modelSizeBytes": 1929901056,
+    "modelSha256": "d02fe9b69ad8cadbbd228e387667af66612c44bed29ffc8eb1e7caf9ac486c12",
+    "mmprojSizeBytes": 844757728,
+    "mmprojSha256": "980c9b2f78c04e6cff93d277ada09e768394f112d75db3b4e9dea8a69f9fb904",
+    "license": "Apache-2.0",
+    "sourceUrl": "https://huggingface.co/ggml-org/Qwen2.5-VL-3B-Instruct-GGUF",
+    "description": "预制的本地视觉工作流规划模型。模型与视觉投影文件由 ggml-org 发布，安装时下载并校验文件大小和 SHA-256。"
+  }
+]

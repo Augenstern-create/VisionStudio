@@ -4,22 +4,21 @@ using System.Text.Json.Serialization;
 namespace VisionStudio.Core;
 
 [JsonConverter(typeof(JsonStringEnumConverter<NodeValueType>))]
-public enum NodeValueType
-{
-    Any,
-    Mat,
-    Integer,
-    Double,
-    Boolean,
-    String,
-    Point,
-    Line,
-    Circle,
-    Rectangle,
-    Contours,
-    Points,
-    Matrix,
-    Collection
+public enum NodeValueType {
+  Any,
+  Mat,
+  Integer,
+  Double,
+  Boolean,
+  String,
+  Point,
+  Line,
+  Circle,
+  Rectangle,
+  Contours,
+  Points,
+  Matrix,
+  Collection
 }
 
 public sealed record PortDefinition(
@@ -47,25 +46,31 @@ public sealed record OperatorDescriptor(
     IReadOnlyList<ParameterDefinition> Parameters,
     string? Description = null,
     string? EnglishName = null,
-    string? EnglishDescription = null);
+    string? EnglishDescription = null,
+    IReadOnlyList<string>? Aliases = null,
+    IReadOnlyList<string>? UseCases = null,
+    IReadOnlyList<string>? Limitations = null,
+    IReadOnlyList<string>? Keywords = null);
 
-public sealed class WorkflowNode
-{
-    public required string Id { get; init; }
-    public required string Type { get; init; }
-    public string? Name { get; set; }
-    public double X { get; set; }
-    public double Y { get; set; }
-    public Dictionary<string, JsonElement> Parameters { get; init; } = new(StringComparer.Ordinal);
+public sealed class WorkflowNode {
+  public required string Id { get; init; }
+  public required string Type { get; init; }
+  public string? Name { get; set; }
+  public double X { get; set; }
+  public double Y { get; set; }
+  public Dictionary<string, JsonElement> Parameters { get; init; } = new(StringComparer.Ordinal);
 
-    public T GetParameter<T>(string name, T fallback)
-    {
-        if (!Parameters.TryGetValue(name, out var value)) return fallback;
-        return value.Deserialize<T>(WorkflowJson.Options) ?? fallback;
+  public T GetParameter<T>(string name, T fallback) {
+    if (!Parameters.TryGetValue(name, out var value)) {
+      return fallback;
     }
 
-    public void SetParameter<T>(string name, T value) =>
-        Parameters[name] = JsonSerializer.SerializeToElement(value, WorkflowJson.Options);
+    return value.Deserialize<T>(WorkflowJson.Options) ?? fallback;
+  }
+
+  public void SetParameter<T>(string name, T value) {
+    Parameters[name] = JsonSerializer.SerializeToElement(value, WorkflowJson.Options);
+  }
 }
 
 public sealed record WorkflowConnection(
@@ -74,33 +79,32 @@ public sealed record WorkflowConnection(
     string ToNode,
     string ToPort);
 
-public sealed class WorkflowDocument
-{
-    public const int CurrentSchemaVersion = 1;
-    public int SchemaVersion { get; init; } = CurrentSchemaVersion;
-    public string Name { get; set; } = "Main";
-    public List<WorkflowNode> Nodes { get; init; } = [];
-    public List<WorkflowConnection> Connections { get; init; } = [];
+public sealed class WorkflowDocument {
+  public const int CurrentSchemaVersion = 1;
+  public int SchemaVersion { get; init; } = CurrentSchemaVersion;
+  public string Name { get; set; } = "Main";
+  public List<WorkflowNode> Nodes { get; init; } = [];
+  public List<WorkflowConnection> Connections { get; init; } = [];
 }
 
-public static class WorkflowJson
-{
-    public static JsonSerializerOptions Options { get; } = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() }
-    };
+public static class WorkflowJson {
+  public static JsonSerializerOptions Options { get; } = new() {
+    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    WriteIndented = true,
+    Converters = { new JsonStringEnumConverter() }
+  };
 
-    public static string Serialize(WorkflowDocument workflow) =>
-        JsonSerializer.Serialize(workflow, Options);
+  public static string Serialize(WorkflowDocument workflow) {
+    return JsonSerializer.Serialize(workflow, Options);
+  }
 
-    public static WorkflowDocument Deserialize(string json)
-    {
-        var workflow = JsonSerializer.Deserialize<WorkflowDocument>(json, Options)
-            ?? throw new JsonException("Workflow content is empty.");
-        if (workflow.SchemaVersion > WorkflowDocument.CurrentSchemaVersion)
-            throw new NotSupportedException($"Workflow schema {workflow.SchemaVersion} is newer than supported schema {WorkflowDocument.CurrentSchemaVersion}.");
-        return workflow;
+  public static WorkflowDocument Deserialize(string json) {
+    var workflow = JsonSerializer.Deserialize<WorkflowDocument>(json, Options)
+        ?? throw new JsonException("Workflow content is empty.");
+    if (workflow.SchemaVersion > WorkflowDocument.CurrentSchemaVersion) {
+      throw new NotSupportedException($"Workflow schema {workflow.SchemaVersion} is newer than supported schema {WorkflowDocument.CurrentSchemaVersion}.");
     }
+
+    return workflow;
+  }
 }

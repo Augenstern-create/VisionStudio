@@ -73,6 +73,27 @@ public sealed class ProjectTests
         await service.AppendOperationAsync(handle, second);
         Assert.Equal([first, second], await service.LoadOperationsAsync(handle));
     }
+
+    [Fact]
+    public async Task ConcurrentWorkflowSaves_AreSerializedInRequestOrder()
+    {
+        using var temp = new TemporaryDirectory();
+        var service = new ProjectService();
+        var handle = await service.CreateAsync(temp.Path, "ConcurrentSave");
+        var saves = Enumerable.Range(1, 40)
+            .Select(index => service.SaveWorkflowAsync(
+                handle,
+                new WorkflowDocument { Name = $"Revision-{index}" },
+                createSnapshot: false))
+            .ToArray();
+
+        await Task.WhenAll(saves);
+
+        Assert.Equal("Revision-40", (await service.LoadWorkflowAsync(handle)).Name);
+        var autosavePath = ProjectPaths.ResolveInside(handle.RootPath, ".project/autosave/main.vflow");
+        Assert.Equal("Revision-40", WorkflowJson.Deserialize(await File.ReadAllTextAsync(autosavePath)).Name);
+        Assert.Empty(Directory.GetFiles(handle.RootPath, "*.tmp-*", SearchOption.AllDirectories));
+    }
 }
 
 internal sealed class TemporaryDirectory : IDisposable

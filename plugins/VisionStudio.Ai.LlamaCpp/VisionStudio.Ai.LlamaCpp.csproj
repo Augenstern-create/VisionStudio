@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>VisionStudio.Ai.LlamaCpp</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\VisionStudio.Core\VisionStudio.Core.csproj" />
+    <ProjectReference Include="..\..\src\VisionStudio.Ai.Abstractions\VisionStudio.Ai.Abstractions.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="plugin.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

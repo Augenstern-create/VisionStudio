@@ -37,7 +37,9 @@ static async Task<int> RunAsync(string[] args)
             case "export" when args.Length >= 3:
             {
                 var workflow = await LoadAsync(args[1]);
-                var code = new CSharpWorkflowGenerator(registry).Generate(workflow);
+                var code = new CSharpWorkflowGenerator(registry).Generate(
+                    workflow,
+                    targetNodeId: args.Length >= 4 ? args[3] : null);
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(args[2]))!);
                 await File.WriteAllTextAsync(args[2], code);
                 Console.WriteLine(Path.GetFullPath(args[2]));
@@ -49,8 +51,12 @@ static async Task<int> RunAsync(string[] args)
                 var workflow = await LoadAsync(workflowPath);
                 var projectRoot = Directory.GetParent(Path.GetDirectoryName(workflowPath)!)?.FullName
                     ?? throw new InvalidOperationException("Workflow must be under a project workflows directory.");
-                using var result = await new WorkflowExecutor(registry, projectRoot).ExecuteAsync(workflow);
-                var last = WorkflowValidator.Validate(workflow, registry).TopologicalOrder.Last();
+                string? targetNodeId = args.Length >= 4 ? args[3] : null;
+                using var result = await new WorkflowExecutor(registry, projectRoot)
+                    .ExecuteAsync(workflow, targetNodeId: targetNodeId);
+                var last = targetNodeId is null
+                    ? WorkflowValidator.Validate(workflow, registry).TopologicalOrder.Last()
+                    : workflow.Nodes.Single(node => node.Id == targetNodeId);
                 var image = result.GetOutput<Mat>(last.Id, "Image");
                 if (args.Length >= 3)
                 {
@@ -75,8 +81,8 @@ static int Usage()
 {
     Console.Error.WriteLine("VisionStudio.Cli new <project-dir> <name>");
     Console.Error.WriteLine("VisionStudio.Cli validate <workflow.vflow>");
-    Console.Error.WriteLine("VisionStudio.Cli export <workflow.vflow> <output.cs>");
-    Console.Error.WriteLine("VisionStudio.Cli run <workflow.vflow> [output.png]");
+    Console.Error.WriteLine("VisionStudio.Cli export <workflow.vflow> <output.cs> [target-node-id]");
+    Console.Error.WriteLine("VisionStudio.Cli run <workflow.vflow> [output.png] [target-node-id]");
     return 64;
 }
 

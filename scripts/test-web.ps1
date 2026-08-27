@@ -5,8 +5,8 @@ $ErrorActionPreference = 'Stop'
 $workspaceRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $project = Join-Path $workspaceRoot 'src\VisionStudio.Web\VisionStudio.Web.csproj'
 $assembly = Join-Path $workspaceRoot 'src\VisionStudio.Web\bin\Release\net9.0\VisionStudio.Web.dll'
-$sample = Join-Path $workspaceRoot 'samples\DemoProject\images\test\input.png'
-$clientScript = Join-Path $workspaceRoot 'src\VisionStudio.Web\wwwroot\app.js'
+$sample = Join-Path $workspaceRoot 'tests\image\1.png'
+$clientDirectory = Join-Path $workspaceRoot 'src\VisionStudio.Web\wwwroot'
 $testRoot = Join-Path $workspaceRoot ('artifacts\web-automated-test-' + [Guid]::NewGuid().ToString('N'))
 $token = 'visionstudio-web-automated-test-token'
 $server = $null
@@ -31,8 +31,11 @@ try {
     }
     if (!(Test-Path -LiteralPath $assembly)) { throw "Web assembly is missing: $assembly" }
     if (!(Test-Path -LiteralPath $sample)) { throw "Test image is missing: $sample" }
-    $clientSource = Get-Content -LiteralPath $clientScript -Raw
-    Assert-True ($clientSource.Contains('const categoryNames=') -and $clientSource.Contains('state.language==="en-US"?port.name')) 'English Web labels are not using localized categories and stable port names.'
+    $clientSource = (Get-ChildItem -LiteralPath $clientDirectory -Filter '*.js' |
+        Sort-Object Name | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"
+    Assert-True ($clientSource -match 'const\s+categoryNames\s*=' -and
+        $clientSource -match 'state\.language\s*===\s*"en-US"\s*\?\s*port\.name') 'English Web labels are not using localized categories and stable port names.'
+    Assert-True ($clientSource.Contains('?targetNodeId=') -and $clientSource.Contains('state.selectedNodeId')) 'Web C# export does not send the selected result node.'
 
     [System.IO.Directory]::CreateDirectory($testRoot) | Out-Null
     $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
@@ -99,10 +102,10 @@ try {
     $artifact = Invoke-WebRequest "$script:baseUrl/api/projects/$projectId/files?path=$([Uri]::EscapeDataString($artifactPath))" -Headers @{ 'X-VisionStudio-Token' = $token }
     Assert-True ($artifact.RawContentLength -gt 100) 'Execution preview artifact is empty.'
 
-    $export = Invoke-Api POST "/api/projects/$projectId/export"
+    $export = Invoke-Api POST "/api/projects/$projectId/export?targetNodeId=gray"
     Assert-True ($export.path -eq 'output/GeneratedVisionAlgorithm.cs') 'C# export path is incorrect.'
     $code = Invoke-WebRequest "$script:baseUrl/api/projects/$projectId/files?path=output%2FGeneratedVisionAlgorithm.cs" -Headers @{ 'X-VisionStudio-Token' = $token }
-    Assert-True ($code.Content.Contains('GeneratedVisionAlgorithm')) 'Generated C# output is invalid.'
+    Assert-True ($code.Content.Contains('GeneratedVisionAlgorithm') -and $code.Content.Contains('return mat_gray.Clone();')) 'Generated C# output did not use the requested result node.'
 
     $undo = Invoke-Api POST "/api/projects/$projectId/undo"
     Assert-True ($undo.revision -eq 2 -and $undo.workflow.nodes.Count -eq 0) 'Undo did not restore the previous workflow.'

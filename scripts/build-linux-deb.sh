@@ -2,14 +2,14 @@
 set -euo pipefail
 
 workspace_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-version="${1:-1.0.0}"
+version="${1:-2.0.0}"
 publish_dir="$workspace_root/artifacts/releases/VisionStudio-$version-ubuntu-x64"
 output_dir="$workspace_root/artifacts/installers"
 staging="$(mktemp -d /tmp/visionstudio-deb-XXXXXX)"
 package="$output_dir/visionstudio_${version}_amd64.deb"
 trap 'rm -rf -- "$staging"' EXIT
 
-if [[ ! -x "$publish_dir/VisionStudio" || ! -x "$publish_dir/VisionStudio.Cli" ]]; then
+if [[ ! -x "$publish_dir/VisionStudio" || ! -x "$publish_dir/VisionStudio.Cli" || ! -x "$publish_dir/VisionStudio.Runtimes.App" ]]; then
   echo "Ubuntu publish output is missing. Run scripts/publish-desktop.ps1 first." >&2
   exit 1
 fi
@@ -50,6 +50,10 @@ cat > "$staging/usr/bin/visionstudio-cli" <<'EOF'
 #!/usr/bin/env bash
 exec /usr/lib/visionstudio/VisionStudio.Cli "$@"
 EOF
+cat > "$staging/usr/bin/visionstudio-runtime" <<'EOF'
+#!/usr/bin/env bash
+exec /usr/lib/visionstudio/VisionStudio.Runtimes.App "$@"
+EOF
 
 cat > "$staging/usr/share/applications/visionstudio.desktop" <<'EOF'
 [Desktop Entry]
@@ -65,6 +69,21 @@ Categories=Development;Graphics;
 MimeType=application/x-visionstudio-project;
 StartupWMClass=VisionStudio
 Keywords=OpenCV;Vision;Workflow;视觉;算法;
+EOF
+
+cat > "$staging/usr/share/applications/visionstudio-runtime.desktop" <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Vision Studio Runtime
+Name[zh_CN]=Vision Studio 运行平台
+Comment=Run Vision Studio inspection projects
+Comment[zh_CN]=运行 Vision Studio 自动化检测项目
+Exec=visionstudio-runtime %F
+Icon=visionstudio
+Terminal=false
+Categories=Development;Graphics;
+StartupWMClass=VisionStudio.Runtimes.App
+Keywords=OpenCV;Vision;Runtime;Inspection;视觉;检测;
 EOF
 
 cat > "$staging/usr/share/mime/packages/visionstudio.xml" <<'EOF'
@@ -93,6 +112,7 @@ cat > "$staging/usr/share/metainfo/io.visionstudio.VisionStudio.metainfo.xml" <<
   <project_license>Proprietary</project_license>
   <launchable type="desktop-id">visionstudio.desktop</launchable>
   <provides><binary>visionstudio</binary></provides>
+  <provides><binary>visionstudio-runtime</binary></provides>
   <branding>
     <color type="primary" scheme_preference="dark">#1E1E1E</color>
     <color type="primary" scheme_preference="light">#007ACC</color>
@@ -117,9 +137,11 @@ command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database -q
 EOF
 
 chmod 0755 "$staging/DEBIAN/postinst" "$staging/DEBIAN/postrm" \
-  "$staging/usr/bin/visionstudio" "$staging/usr/bin/visionstudio-cli" \
-  "$staging/usr/lib/visionstudio/VisionStudio" "$staging/usr/lib/visionstudio/VisionStudio.Cli"
-find "$staging/usr/lib/visionstudio" -type f ! -name VisionStudio ! -name VisionStudio.Cli -exec chmod 0644 {} +
+  "$staging/usr/bin/visionstudio" "$staging/usr/bin/visionstudio-cli" "$staging/usr/bin/visionstudio-runtime" \
+  "$staging/usr/lib/visionstudio/VisionStudio" "$staging/usr/lib/visionstudio/VisionStudio.Cli" \
+  "$staging/usr/lib/visionstudio/VisionStudio.Runtimes.App"
+find "$staging/usr/lib/visionstudio" -type f ! -name VisionStudio ! -name VisionStudio.Cli \
+  ! -name VisionStudio.Runtimes.App -exec chmod 0644 {} +
 find "$staging/usr/share" -type f -exec chmod 0644 {} +
 chmod 0755 "$staging/DEBIAN"
 chmod 0644 "$staging/DEBIAN/control"

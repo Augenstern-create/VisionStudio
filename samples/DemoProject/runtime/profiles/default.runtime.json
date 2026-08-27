@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "name": "裂纹检测单次运行",
+  "inputNodeId": "278f941a30d74260984680aacf0fce7a",
+  "targetNodeId": "metrics_2",
+  "source": {
+    "kind": "Image",
+    "path": "images/input/1.png",
+    "cameraIndex": 0,
+    "width": 640,
+    "height": 480,
+    "loop": true
+  },
+  "execution": {
+    "trigger": "Timer",
+    "intervalMs": 500,
+    "queueMode": "LatestFrame",
+    "queueCapacity": 4,
+    "continueAfterError": true
+  },
+  "resultMappings": [
+    {
+      "name": "检测结果图",
+      "nodeId": "metrics_2",
+      "port": "Image",
+      "role": "PrimaryImage"
+    },
+    {
+      "name": "目标数量",
+      "nodeId": "metrics_2",
+      "port": "Count",
+      "role": "Value"
+    },
+    {
+      "name": "估算像素长度",
+      "nodeId": "metrics_2",
+      "port": "PixelLength",
+      "role": "Value",
+      "unit": "px"
+    },
+    {
+      "name": "轮廓总周长",
+      "nodeId": "metrics_2",
+      "port": "TotalPerimeter",
+      "role": "Value",
+      "unit": "px"
+    },
+    {
+      "name": "结果摘要",
+      "nodeId": "metrics_2",
+      "port": "Summary",
+      "role": "Value"
+    }
+  ]
+}

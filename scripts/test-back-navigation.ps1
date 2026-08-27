@@ -8,13 +8,14 @@ if ([string]::IsNullOrWhiteSpace($ProjectPath)) {
 }
 $ProjectPath = [System.IO.Path]::GetFullPath($ProjectPath)
 $appProject = Join-Path $workspaceRoot 'src\VisionStudio.App\VisionStudio.App.csproj'
-$appExe = Join-Path $workspaceRoot 'src\VisionStudio.App\bin\Release\net9.0\VisionStudio.App.exe'
+$appExe = Join-Path $workspaceRoot 'src\VisionStudio.App\bin\Release\net9.0\VisionStudio.exe'
 
 dotnet build $appProject -c Release --nologo
 if ($LASTEXITCODE -ne 0) { throw 'Release app build failed.' }
 
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
+Add-Type -AssemblyName System.Windows.Forms
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
@@ -26,16 +27,15 @@ public static class VisionStudioBackMenuMouse
 }
 '@
 
-function Click-Element($Element) {
+function Invoke-Element($Element) {
     if ($null -eq $Element) { throw 'Expected menu element was not found.' }
-    $bounds = $Element.Current.BoundingRectangle
-    [VisionStudioBackMenuMouse]::SetCursorPos([int]($bounds.Left + $bounds.Width / 2), [int]($bounds.Top + $bounds.Height / 2)) | Out-Null
-    [VisionStudioBackMenuMouse]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
-    [VisionStudioBackMenuMouse]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
+    $Element.SetFocus()
+    Start-Sleep -Milliseconds 150
+    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
 }
 
 $quotedProjectPath = '"' + $ProjectPath + '"'
-$appProcess = Start-Process -FilePath $appExe -ArgumentList @($quotedProjectPath) -PassThru -WindowStyle Hidden
+$appProcess = Start-Process -FilePath $appExe -ArgumentList @($quotedProjectPath) -PassThru
 try {
     $deadline = [DateTime]::UtcNow.AddSeconds(12)
     do {
@@ -48,25 +48,31 @@ try {
 
     $window = [System.Windows.Automation.AutomationElement]::FromHandle($appProcess.MainWindowHandle)
     [VisionStudioBackMenuMouse]::SetForegroundWindow($appProcess.MainWindowHandle) | Out-Null
-    $fileCondition = [System.Windows.Automation.PropertyCondition]::new(
-        [System.Windows.Automation.AutomationElement]::NameProperty,
-        '文件')
+    $fileCondition = [System.Windows.Automation.OrCondition]::new(
+        [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::NameProperty, '文件'),
+        [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::NameProperty, 'File'))
     $fileMenu = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $fileCondition)
-    Click-Element $fileMenu
+    Invoke-Element $fileMenu
     Start-Sleep -Milliseconds 250
-    $closeCondition = [System.Windows.Automation.PropertyCondition]::new(
-        [System.Windows.Automation.AutomationElement]::NameProperty,
-        '关闭文件夹')
+    $closeCondition = [System.Windows.Automation.OrCondition]::new(
+        [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::NameProperty, '关闭文件夹'),
+        [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::NameProperty, 'Close Folder'))
     $closeFolder = [System.Windows.Automation.AutomationElement]::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $closeCondition)
-    Click-Element $closeFolder
+    Invoke-Element $closeFolder
     Start-Sleep -Milliseconds 800
 
     $appProcess.Refresh()
     if ($appProcess.HasExited) { throw "App exited after closing the folder with code $($appProcess.ExitCode)." }
 
-    $newProjectCondition = [System.Windows.Automation.PropertyCondition]::new(
-        [System.Windows.Automation.AutomationElement]::NameProperty,
-        '＋  新建项目')
+    $newProjectCondition = [System.Windows.Automation.OrCondition]::new(
+        [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::NameProperty, '＋  新建项目'),
+        [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::NameProperty, '+  New Project'))
     $newProjectButton = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $newProjectCondition)
     if ($null -eq $newProjectButton) { throw 'Welcome page did not reappear after closing the folder.' }
 

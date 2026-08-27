@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>VisionStudio.Runtimes.App</AssemblyName>
+    <RootNamespace>VisionStudio.Runtimes.App</RootNamespace>
+    <ApplicationIcon>..\VisionStudio.App\Assets\VisionStudio.ico</ApplicationIcon>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.0" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.0" />
+    <PackageReference Include="Avalonia.Headless" Version="12.1.0" PrivateAssets="all"
+                      Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="Avalonia.Markup.Xaml.Loader" Version="12.1.0" PrivateAssets="all"
+                      Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="Emgu.CV" Version="$(EmguCvVersion)" />
+    <PackageReference Include="Emgu.CV.runtime.windows" Version="$(EmguCvVersion)"
+                      Condition="$([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win-')) Or ('$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Windows')))" />
+    <PackageReference Include="Emgu.CV.runtime.mini.ubuntu-24.04-x64" Version="$(EmguCvVersion)"
+                      Condition="'$(RuntimeIdentifier)' == 'ubuntu-x64' Or ('$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Linux')))" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VisionStudio.Core\VisionStudio.Core.csproj" />
+    <ProjectReference Include="..\VisionStudio.Operators.OpenCv\VisionStudio.Operators.OpenCv.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="..\VisionStudio.App\Assets\VisionStudio.ico"
+                      Link="Assets\VisionStudio.ico" />
+  </ItemGroup>
+</Project>

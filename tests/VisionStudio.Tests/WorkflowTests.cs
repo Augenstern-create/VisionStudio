@@ -40,6 +40,28 @@ public sealed class WorkflowTests
     }
 
     [Fact]
+    public void Validate_AllowsOneOutputToFanOutButKeepsEachInputUnique()
+    {
+        WorkflowNode Add(string type)
+        {
+            _registry.TryGetDescriptor(type, out var descriptor);
+            return OpenCvOperatorCatalog.CreateNode(descriptor, 0, 0);
+        }
+        var load = Add("Image.Load");
+        var gray = Add("Image.Gray");
+        var canny = Add("Edge.Canny");
+        var workflow = new WorkflowDocument
+        {
+            Nodes = { load, gray, canny },
+            Connections = { new(load.Id, "Image", gray.Id, "Image"), new(load.Id, "Image", canny.Id, "Image") }
+        };
+
+        var result = WorkflowValidator.Validate(workflow, _registry);
+
+        Assert.True(result.IsValid, string.Join("; ", result.Errors));
+    }
+
+    [Fact]
     public void Validate_RejectsDuplicateIdsUnknownPortsAndTypeMismatch()
     {
         var registry = new OperatorRegistry();
@@ -87,6 +109,90 @@ public sealed class WorkflowTests
         Assert.Contains("return mat_", code);
         Assert.DoesNotContain("VisionStudio", code);
         Assert.True(code.IndexOf("CvtColor", StringComparison.Ordinal) < code.IndexOf("Threshold", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void CodeGenerator_EmbedsExecutionManifestWithNodesConnectionsAndParameters()
+    {
+        var workflow = LinearWorkflow(_registry);
+        var code = new CSharpWorkflowGenerator(_registry).Generate(workflow);
+
+        var manifest = CSharpExportManifest.Parse(code);
+
+        Assert.Equal(CSharpExportManifest.CurrentSchemaVersion, manifest.SchemaVersion);
+        Assert.Equal(workflow.Nodes[2].Id, manifest.TargetNodeId);
+        Assert.Equal(3, manifest.Nodes.Count);
+        Assert.Equal(2, manifest.Connections.Count);
+        var threshold = manifest.Nodes.Single(node => node.Type == "Image.Threshold");
+        Assert.Contains(threshold.Parameters, parameter => parameter.Name == "threshold" && parameter.DefaultValue == "128");
+        Assert.Contains("IReadOnlyDictionary<string, string>? parameters", code);
+        Assert.Contains("ParameterDouble(parameters", code);
+    }
+
+    [Fact]
+    public void ExecutionManifest_RejectsOrdinaryOrCorruptedCSharp()
+    {
+        Assert.Throws<InvalidDataException>(() => CSharpExportManifest.Parse("public class Example {}"));
+        Assert.Throws<InvalidDataException>(() => CSharpExportManifest.Parse(CSharpExportManifest.Marker + "not-base64"));
+    }
+
+    [Fact]
+    public void CodeGenerator_ExportsOnlyTheSelectedResultBranch()
+    {
+        WorkflowNode Add(string type, string id) => new()
+        {
+            Id = id,
+            Type = type,
+            Name = type
+        };
+        var firstLoad = Add("Image.Load", "load_1");
+        var firstGray = Add("Image.Gray", "gray_1");
+        var secondLoad = Add("Image.Load", "load_2");
+        var secondGray = Add("Image.Gray", "gray_2");
+        var workflow = new WorkflowDocument
+        {
+            Nodes = { firstLoad, firstGray, secondLoad, secondGray },
+            Connections =
+            {
+                new(firstLoad.Id, "Image", firstGray.Id, "Image"),
+                new(secondLoad.Id, "Image", secondGray.Id, "Image")
+            }
+        };
+
+        var code = new CSharpWorkflowGenerator(_registry).Generate(workflow, targetNodeId: secondGray.Id);
+
+        Assert.Contains("(load_2)", code);
+        Assert.Contains("(gray_2)", code);
+        Assert.DoesNotContain("(load_1)", code);
+        Assert.DoesNotContain("(gray_1)", code);
+        Assert.Contains("return mat_gray_2.Clone();", code);
+    }
+
+    [Fact]
+    public void CodeGenerator_RequiresAnExplicitTargetForMultipleResultBranches()
+    {
+        var first = LinearWorkflow(_registry);
+        var second = new WorkflowDocument
+        {
+            Nodes =
+            {
+                new WorkflowNode { Id = "load_2", Type = "Image.Load" },
+                new WorkflowNode { Id = "gray_2", Type = "Image.Gray" },
+                new WorkflowNode { Id = "threshold_2", Type = "Image.Threshold" }
+            },
+            Connections =
+            {
+                new("load_2", "Image", "gray_2", "Image"),
+                new("gray_2", "Image", "threshold_2", "Image")
+            }
+        };
+        first.Nodes.AddRange(second.Nodes);
+        first.Connections.AddRange(second.Connections);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            new CSharpWorkflowGenerator(_registry).Generate(first));
+
+        Assert.Contains("multiple image result nodes", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     internal static WorkflowDocument LinearWorkflow(OperatorRegistry registry)

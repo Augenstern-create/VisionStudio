@@ -3,49 +3,219 @@
   "name": "Main",
   "nodes": [
     {
-      "id": "load",
+      "id": "4102953d3b584d9aaf0c224c62d3e5b0",
       "type": "Image.Load",
       "name": "\u52A0\u8F7D\u56FE\u50CF",
-      "x": 40,
-      "y": 100,
+      "x": 64,
+      "y": 256,
       "parameters": {
-        "path": "images/input/input.png"
+        "path": "images/input/1.png"
+      }
+    },
+    {
+      "id": "ffb109cd09424d08b6a665448b2b03f5",
+      "type": "Image.Gray",
+      "name": "\u7070\u5EA6\u5316",
+      "x": 320,
+      "y": 256,
+      "parameters": {}
+    },
+    {
+      "id": "b9c03e25e55b442ca6e4e4da528e4a3d",
+      "type": "Image.Save",
+      "name": "\u4FDD\u5B58\u56FE\u50CF",
+      "x": 608,
+      "y": 64,
+      "parameters": {
+        "path": "images/output/result.png"
+      }
+    },
+    {
+      "id": "afc6a7230074460c82396a34f0288efc",
+      "type": "Edge.Canny",
+      "name": "Canny \u8FB9\u7F18",
+      "x": 320,
+      "y": 64,
+      "parameters": {
+        "threshold1": 50,
+        "threshold2": 150,
+        "aperture": 3
       }
     },
     {
       "id": "gray",
       "type": "Image.Gray",
       "name": "\u7070\u5EA6\u5316",
-      "x": 260,
-      "y": 100,
+      "x": 320,
+      "y": 480,
       "parameters": {}
     },
     {
-      "id": "threshold",
-      "type": "Image.Threshold",
-      "name": "\u4E8C\u503C\u5316",
-      "x": 480,
-      "y": 100,
+      "id": "blur",
+      "type": "Image.GaussianBlur",
+      "name": "\u9AD8\u65AF\u6A21\u7CCA",
+      "x": 608,
+      "y": 256,
       "parameters": {
-        "threshold": 128,
-        "maxValue": 255,
-        "mode": "Binary"
+        "kernelSize": 5,
+        "sigma": 1.5
       }
     },
     {
-      "id": "save",
-      "type": "Image.Save",
-      "name": "\u4FDD\u5B58\u56FE\u50CF",
-      "x": 700,
-      "y": 100,
+      "id": "blackhat",
+      "type": "Morphology.BlackHat",
+      "name": "\u9ED1\u5E3D",
+      "x": 896,
+      "y": 64,
       "parameters": {
-        "path": "images/output/result.png"
+        "kernelSize": 3,
+        "iterations": 1
+      }
+    },
+    {
+      "id": "otsu",
+      "type": "Threshold.Otsu",
+      "name": "\u5927\u6D25\u81EA\u52A8\u9608\u503C",
+      "x": 1184,
+      "y": 64,
+      "parameters": {}
+    },
+    {
+      "id": "close",
+      "type": "Morphology.Close",
+      "name": "\u95ED\u8FD0\u7B97",
+      "x": 1472,
+      "y": 64,
+      "parameters": {
+        "kernelSize": 3,
+        "iterations": 1
+      }
+    },
+    {
+      "id": "contours",
+      "type": "Blob.Contours",
+      "name": "\u67E5\u627E\u8F6E\u5ED3",
+      "x": 1728,
+      "y": 64,
+      "parameters": {
+        "mode": "External"
+      }
+    },
+    {
+      "id": "metrics",
+      "type": "Contour.PathMetrics",
+      "name": "\u7EC6\u957F\u76EE\u6807\u8DEF\u5F84\u7EDF\u8BA1",
+      "x": 2016,
+      "y": 64,
+      "parameters": {
+        "minArea": 30,
+        "minLength": 20,
+        "minElongation": 1.5,
+        "maxCount": 100
+      }
+    },
+    {
+      "id": "278f941a30d74260984680aacf0fce7a",
+      "type": "Input.RuntimeFrame",
+      "name": "\u8FD0\u884C\u65F6\u56FE\u50CF",
+      "x": 64,
+      "y": 64,
+      "parameters": {}
+    },
+    {
+      "id": "gray_2",
+      "type": "Image.Gray",
+      "name": "\u7070\u5EA6\u5316",
+      "x": 320,
+      "y": 672,
+      "parameters": {}
+    },
+    {
+      "id": "blur_2",
+      "type": "Image.GaussianBlur",
+      "name": "\u9AD8\u65AF\u6A21\u7CCA",
+      "x": 608,
+      "y": 480,
+      "parameters": {
+        "kernelSize": 5,
+        "sigma": 1.5
+      }
+    },
+    {
+      "id": "blackhat_2",
+      "type": "Morphology.BlackHat",
+      "name": "\u9ED1\u5E3D",
+      "x": 896,
+      "y": 256,
+      "parameters": {
+        "kernelSize": 3,
+        "iterations": 1
+      }
+    },
+    {
+      "id": "otsu_2",
+      "type": "Threshold.Otsu",
+      "name": "\u5927\u6D25\u81EA\u52A8\u9608\u503C",
+      "x": 1184,
+      "y": 256,
+      "parameters": {}
+    },
+    {
+      "id": "close_2",
+      "type": "Morphology.Close",
+      "name": "\u95ED\u8FD0\u7B97",
+      "x": 1472,
+      "y": 256,
+      "parameters": {
+        "kernelSize": 3,
+        "iterations": 1
+      }
+    },
+    {
+      "id": "contours_2",
+      "type": "Blob.Contours",
+      "name": "\u67E5\u627E\u8F6E\u5ED3",
+      "x": 1728,
+      "y": 256,
+      "parameters": {
+        "mode": "External"
+      }
+    },
+    {
+      "id": "metrics_2",
+      "type": "Contour.PathMetrics",
+      "name": "\u7EC6\u957F\u76EE\u6807\u8DEF\u5F84\u7EDF\u8BA1",
+      "x": 2016,
+      "y": 256,
+      "parameters": {
+        "minArea": 30,
+        "minLength": 20,
+        "minElongation": 1.5,
+        "maxCount": 100
       }
     }
   ],
   "connections": [
     {
-      "fromNode": "load",
+      "fromNode": "4102953d3b584d9aaf0c224c62d3e5b0",
+      "fromPort": "Image",
+      "toNode": "ffb109cd09424d08b6a665448b2b03f5",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "ffb109cd09424d08b6a665448b2b03f5",
+      "fromPort": "Image",
+      "toNode": "b9c03e25e55b442ca6e4e4da528e4a3d",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "4102953d3b584d9aaf0c224c62d3e5b0",
+      "fromPort": "Image",
+      "toNode": "afc6a7230074460c82396a34f0288efc",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "4102953d3b584d9aaf0c224c62d3e5b0",
       "fromPort": "Image",
       "toNode": "gray",
       "toPort": "Image"
@@ -53,14 +223,92 @@
     {
       "fromNode": "gray",
       "fromPort": "Image",
-      "toNode": "threshold",
+      "toNode": "blur",
       "toPort": "Image"
     },
     {
-      "fromNode": "threshold",
+      "fromNode": "blur",
       "fromPort": "Image",
-      "toNode": "save",
+      "toNode": "blackhat",
       "toPort": "Image"
+    },
+    {
+      "fromNode": "blackhat",
+      "fromPort": "Image",
+      "toNode": "otsu",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "otsu",
+      "fromPort": "Image",
+      "toNode": "close",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "close",
+      "fromPort": "Image",
+      "toNode": "contours",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "contours",
+      "fromPort": "Image",
+      "toNode": "metrics",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "contours",
+      "fromPort": "Contours",
+      "toNode": "metrics",
+      "toPort": "Contours"
+    },
+    {
+      "fromNode": "278f941a30d74260984680aacf0fce7a",
+      "fromPort": "Image",
+      "toNode": "gray_2",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "gray_2",
+      "fromPort": "Image",
+      "toNode": "blur_2",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "blur_2",
+      "fromPort": "Image",
+      "toNode": "blackhat_2",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "blackhat_2",
+      "fromPort": "Image",
+      "toNode": "otsu_2",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "otsu_2",
+      "fromPort": "Image",
+      "toNode": "close_2",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "close_2",
+      "fromPort": "Image",
+      "toNode": "contours_2",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "contours_2",
+      "fromPort": "Image",
+      "toNode": "metrics_2",
+      "toPort": "Image"
+    },
+    {
+      "fromNode": "contours_2",
+      "fromPort": "Contours",
+      "toNode": "metrics_2",
+      "toPort": "Contours"
     }
   ]
 }

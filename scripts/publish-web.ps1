@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([string]$Version = '1.0.0')
+param([string]$Version = '2.0.0')
 
 $ErrorActionPreference = 'Stop'
 $workspaceRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))

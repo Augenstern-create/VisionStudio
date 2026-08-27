@@ -110,14 +110,80 @@ public sealed class ExtendedOperatorTests
     }
 
     [Fact]
-    public void CodeGenerator_UsesRuntimeBackedExportForExtendedOperators()
+    public void CodeGenerator_RejectsUnsupportedOperatorsInsteadOfEmittingRuntimeWrapper()
     {
         var load = Node("Image.Load"); var hsv = Node("Image.BgrToHsv");
         var workflow = new WorkflowDocument { Nodes = { load, hsv }, Connections = { new(load.Id, "Image", hsv.Id, "Image") } };
-        var code = new CSharpWorkflowGenerator(_registry).Generate(workflow);
-        Assert.Contains("OpenCvOperatorCatalog.CreateRegistry", code);
-        Assert.Contains("WorkflowExecutor", code);
-        Assert.Contains("Image.BgrToHsv", code);
+        var exception = Assert.Throws<NotSupportedException>(() => new CSharpWorkflowGenerator(_registry).Generate(workflow));
+        Assert.Contains("Image.BgrToHsv", exception.Message);
+        Assert.Contains("independently executable", exception.Message);
+    }
+
+    [Fact]
+    public void CodeGenerator_ExtendedExportUsesTheExplicitTargetAndExcludesOtherBranches()
+    {
+        var firstLoad = Node("Image.Load");
+        var firstClose = Node("Morphology.Close");
+        var secondLoad = Node("Image.Load");
+        var secondClose = Node("Morphology.Close");
+        var workflow = new WorkflowDocument
+        {
+            Nodes = { firstLoad, firstClose, secondLoad, secondClose },
+            Connections =
+            {
+                new(firstLoad.Id, "Image", firstClose.Id, "Image"),
+                new(secondLoad.Id, "Image", secondClose.Id, "Image")
+            }
+        };
+
+        var code = new CSharpWorkflowGenerator(_registry).Generate(workflow, targetNodeId: secondClose.Id);
+
+        Assert.Contains("CvInvoke.MorphologyEx", code);
+        Assert.Contains("return mat_", code);
+        Assert.Contains(secondClose.Id, code);
+        Assert.Contains(secondLoad.Id, code);
+        Assert.DoesNotContain(firstLoad.Id, code);
+        Assert.DoesNotContain(firstClose.Id, code);
+        Assert.DoesNotContain("VisionStudio", code);
+        Assert.DoesNotContain("WorkflowJson", code);
+    }
+
+    [Fact]
+    public void CodeGenerator_ExpandsCrackMeasurementWorkflowIntoOpenCvCalls()
+    {
+        var load = Node("Image.Load");
+        var gray = Node("Image.Gray");
+        var blur = Node("Image.GaussianBlur");
+        var blackHat = Node("Morphology.BlackHat");
+        var otsu = Node("Threshold.Otsu");
+        var close = Node("Morphology.Close");
+        var contours = Node("Blob.Contours");
+        var metrics = Node("Contour.PathMetrics");
+        var workflow = new WorkflowDocument
+        {
+            Nodes = { load, gray, blur, blackHat, otsu, close, contours, metrics },
+            Connections =
+            {
+                new(load.Id, "Image", gray.Id, "Image"),
+                new(gray.Id, "Image", blur.Id, "Image"),
+                new(blur.Id, "Image", blackHat.Id, "Image"),
+                new(blackHat.Id, "Image", otsu.Id, "Image"),
+                new(otsu.Id, "Image", close.Id, "Image"),
+                new(close.Id, "Image", contours.Id, "Image"),
+                new(contours.Id, "Image", metrics.Id, "Image"),
+                new(contours.Id, "Contours", metrics.Id, "Contours")
+            }
+        };
+
+        var code = new CSharpWorkflowGenerator(_registry).Generate(workflow, targetNodeId: metrics.Id);
+
+        Assert.Contains("CvInvoke.GaussianBlur", code);
+        Assert.Contains("MorphOp.Blackhat", code);
+        Assert.Contains("ThresholdType.Otsu", code);
+        Assert.Contains("CvInvoke.FindContours", code);
+        Assert.Contains("CvInvoke.MinAreaRect", code);
+        Assert.DoesNotContain("VisionStudio.Core", code);
+        Assert.DoesNotContain("WorkflowJson.Deserialize", code);
     }
 
     private OperatorDescriptor Descriptor(string type) { Assert.True(_registry.TryGetDescriptor(type, out var descriptor)); return descriptor; }

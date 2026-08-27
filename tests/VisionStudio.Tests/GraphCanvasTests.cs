@@ -69,4 +69,40 @@ public sealed class GraphCanvasTests
         Assert.Equal(sources[0].X, sources[1].X);
         Assert.NotEqual(sources[0].Y, sources[1].Y);
     }
+
+    [Fact]
+    public void ConnectionBranchActions_SelectLayoutAndDeleteOnlyDownstreamNodes()
+    {
+        var registry = OpenCvOperatorCatalog.CreateRegistry();
+        var workflow = WorkflowTests.LinearWorkflow(registry);
+        var source = workflow.Nodes[0];
+        var branchRoot = workflow.Nodes[1];
+        var branchLeaf = workflow.Nodes[2];
+        var sibling = OpenCvOperatorCatalog.CreateNode(registry.Descriptors.Single(item => item.Type == "Edge.Canny"), 900, 500);
+        workflow.Nodes.Add(sibling);
+        workflow.Connections.Add(new(source.Id, "Image", sibling.Id, "Image"));
+        source.X = 20; source.Y = 20;
+        branchRoot.X = 900; branchRoot.Y = 900;
+        branchLeaf.X = 100; branchLeaf.Y = 900;
+        var branchEdge = workflow.Connections.Single(edge => edge.FromNode == source.Id && edge.ToNode == branchRoot.Id);
+        var canvas = new GraphCanvas { Registry = registry, Workflow = workflow, Width = 1200, Height = 800 };
+
+        Assert.Equal(new HashSet<string> { branchRoot.Id, branchLeaf.Id }, canvas.GetDownstreamNodeIds(branchEdge));
+        canvas.SelectDownstream(branchEdge);
+        Assert.Contains(branchRoot.Id, canvas.SelectedNodeIds);
+        Assert.Contains(branchLeaf.Id, canvas.SelectedNodeIds);
+        Assert.DoesNotContain(sibling.Id, canvas.SelectedNodeIds);
+
+        Assert.True(canvas.AutoLayoutDownstream(branchEdge));
+        Assert.True(branchRoot.X < branchLeaf.X);
+        Assert.Equal(900, sibling.X);
+        Assert.Equal(500, sibling.Y);
+
+        Assert.True(canvas.DeleteDownstream(branchEdge));
+        Assert.Contains(workflow.Nodes, node => node.Id == source.Id);
+        Assert.Contains(workflow.Nodes, node => node.Id == sibling.Id);
+        Assert.DoesNotContain(workflow.Nodes, node => node.Id == branchRoot.Id || node.Id == branchLeaf.Id);
+        Assert.Single(workflow.Connections);
+        Assert.Equal(sibling.Id, workflow.Connections[0].ToNode);
+    }
 }

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants Condition="'$(GeneratedSource)' != ''">$(DefineConstants);HAS_GENERATED_SOURCE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Emgu.CV" Version="4.13.0.5924" />
+    <PackageReference Include="Emgu.CV.runtime.windows" Version="4.13.0.5924" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+    <PackageReference Include="Emgu.CV.runtime.mini.ubuntu-24.04-x64" Version="4.13.0.5924" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
+    <Compile Include="Program.cs" />
+    <Compile Include="$(GeneratedSource)" Link="GeneratedVisionAlgorithm.cs" Condition="'$(GeneratedSource)' != ''" />
+  </ItemGroup>
+</Project>

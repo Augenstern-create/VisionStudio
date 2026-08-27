@@ -8,7 +8,8 @@ $iconPath = Join-Path $workspaceRoot 'src\VisionStudio.App\Assets\VisionStudio.i
 
 $requiredBrushes = @(
     'AppBackgroundBrush', 'WorkbenchBrush', 'SideBarBrush', 'PanelBrush',
-    'TitleBarBrush', 'BorderBrush', 'PrimaryBrush', 'TextBrush',
+    'TitleBarBrush', 'BorderBrush', 'PrimaryBrush', 'ActivityBarBorderBrush',
+    'ActivitySelectionBrush', 'TextBrush',
     'MutedTextBrush', 'StatusBarBrush'
 )
 foreach ($brush in $requiredBrushes) {
@@ -23,6 +24,27 @@ foreach ($theme in @('Dark', 'Light', 'Gradient')) {
     }
     if ($windowXaml -notmatch ('Tag="' + $theme + '"')) {
         throw "View menu does not expose $theme."
+    }
+}
+
+if (($windowXaml | Select-String 'PointerPressed="TitleBar_PointerPressed"' -AllMatches).Matches.Count -ne 2) {
+    throw 'Both welcome and editor title bars must expose window dragging.'
+}
+if (($windowXaml | Select-String 'WindowDecorationProperties.ElementRole="TitleBar"' -AllMatches).Matches.Count -ne 2) {
+    throw 'Both title bars must be registered as native window drag regions.'
+}
+if (($windowXaml | Select-String 'WindowDecorationProperties.ElementRole="User"' -AllMatches).Matches.Count -lt 3) {
+    throw 'Interactive title-bar controls must opt out of native dragging.'
+}
+if ($windowXaml -notmatch 'BorderBrush="\{DynamicResource ActivityBarBorderBrush\}"') {
+    throw 'Activity bar divider is not bound to its theme resource.'
+}
+if ($appXaml -notmatch 'BorderBrush" Value="\{DynamicResource ActivitySelectionBrush\}"') {
+    throw 'Activity selection border is not bound to its theme resource.'
+}
+foreach ($color in @('#007ACC', '#0067B8', '#6C63FF')) {
+    if ($themeManager -notmatch [regex]::Escape('("ActivitySelectionBrush", "' + $color + '")')) {
+        throw "Theme manager is missing activity selection color $color."
     }
 }
 

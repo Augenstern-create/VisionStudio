@@ -5,7 +5,7 @@
   #error OutputDir must point to the installer output directory.
 #endif
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "2.0.0"
 #endif
 #ifndef WorkspaceRoot
   #error WorkspaceRoot must point to the repository root.
@@ -16,6 +16,7 @@
 
 #define AppName "Vision Studio"
 #define AppExeName "VisionStudio.exe"
+#define RuntimeExeName "VisionStudio.Runtimes.App.exe"
 #define AppPublisher "Vision Studio"
 #define ProjectProgId "VisionStudio.Project"
 
@@ -59,10 +60,13 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#SourceDir}\*"; DestDir: "{app}"; Excludes: "config\ai-models.json,config\ai-local-models.json,config\ai-remote-models.json,config\ai-contexts.json,config\.ai-secrets.key"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#SourceDir}\config\ai-local-models.json"; DestDir: "{app}\config"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "{#SourceDir}\config\ai-remote-models.json"; DestDir: "{app}\config"; Flags: onlyifdoesntexist uninsneveruninstall
 
 [Icons]
 Name: "{autoprograms}\Vision Studio"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"
+Name: "{autoprograms}\Vision Studio Runtime"; Filename: "{app}\{#RuntimeExeName}"; WorkingDir: "{app}"
 Name: "{autodesktop}\Vision Studio"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Registry]

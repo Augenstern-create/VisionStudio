@@ -7,11 +7,11 @@
   <img alt=".NET 9" src="https://img.shields.io/badge/.NET-9.0-512BD4">
   <img alt="Avalonia" src="https://img.shields.io/badge/UI-Avalonia-8B44AC">
   <img alt="OpenCV" src="https://img.shields.io/badge/Vision-OpenCV-5C3EE8">
-  <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20Ubuntu%20%7C%20Web-1685D1">
+  <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20Web-1685D1">
   <img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-green">
 </div>
 
-Vision Studio 用节点和强类型端口组织图像处理流程。你可以拖拽连接算子、调整参数并即时查看结果，也可以把工作流导出为 C# 源码。项目同时提供 Avalonia 桌面编辑器、响应式 Web 工作台、命令行工具和面向未来 AI 助手的自动化接口。
+Vision Studio 用节点和强类型端口组织图像处理流程。你可以拖拽连接算子、调整参数并即时查看结果，也可以把工作流导出为 C# 源码。项目同时提供 Avalonia 桌面编辑器、响应式 Web 工作台、命令行工具和可选的本地 AI 插件接口。
 
 ![Vision Studio 工作流编辑器](docs/assets/editor-dark.png)
 
@@ -24,6 +24,9 @@ Vision Studio 用节点和强类型端口组织图像处理流程。你可以拖
 - 图像结果与结构化测量结果统一预览，缓存和输出均保存在项目目录中。
 - 中文与英文界面，内置深色、浅色和渐变三种主题。
 - 工作流可导出为 C#，也可通过 CLI 和 `IWorkflowAutomationApi` 自动创建、修改和执行。
+- 左侧 VS Code 式活动栏可在算子和 AI 对话之间切换；“文件 → 设置”集中管理多个远程 OpenAI 兼容模型和用户自行配置的本地模型，每个模型/项目使用独立上下文。
+- V2.0 优先支持远程 OpenAI 兼容 API，远程密钥加密落盘。本地 AI 可通过独立 llama.cpp/GGUF Provider 插件接入，但模型和运行时由用户自行准备；预制模型一键下载暂不作为 V2.0 稳定能力。
+- 加载图像节点显示 `IMG-01` 短编号；AI 对话支持按编号/节点名指定图片、点击引用或从画布拖入，避免多图流程分析错图。
 - Web 版在服务器执行 OpenCV，浏览器只负责编辑、上传和安全预览。
 
 > 部分 AI、高级标定、卡尺和特征节点目前提供稳定接口或基础预览，尚不代表生产级推理或计量精度。准确范围请查看[产品与技术边界](docs/boundaries.md)。
@@ -32,12 +35,15 @@ Vision Studio 用节点和强类型端口组织图像处理流程。你可以拖
 
 | 组件 | 用途 | 当前支持 |
 | --- | --- | --- |
-| `VisionStudio.App` | Avalonia 桌面编辑器 | Windows x64、Ubuntu 24.04 x64 |
+| `VisionStudio.App` | Avalonia 桌面编辑器 | V2.0 正式发布 Windows x64；Linux 桌面版暂缓发布 |
+| `VisionStudio.Runtimes.App` | 直接运行 `.vstudio` 项目、单次/连续检测与结果显示 | Windows x64；随主安装包安装 |
 | `VisionStudio.Web` | 响应式 Web 编辑器与服务端执行 API | Ubuntu Server 24.04 x64 |
 | `VisionStudio.Cli` | 项目创建、校验、执行和代码导出 | .NET 9 支持的平台 |
 | `VisionStudio.Core` | 项目格式、工作流、校验、执行与自动化协议 | UI 无关 |
 | `VisionStudio.Operators.OpenCv` | EmguCV/OpenCV 算子实现 | 按目标平台加载原生运行库 |
 | `VisionStudio.CodeGen` | C# 工作流代码生成 | UI 无关 |
+| `VisionStudio.Ai` / `Ai.Abstractions` | 通用对话协调、插件加载和受控 Graph Action | 主程序内置，不绑定模型 |
+| `plugins/VisionStudio.Ai.LlamaCpp` | 可选 llama.cpp Provider | 单独下载，不进入主安装包 |
 
 ## 技术栈
 
@@ -52,7 +58,7 @@ Vision Studio 用节点和强类型端口组织图像处理流程。你可以拖
 ### 环境要求
 
 - [.NET SDK 9.0](https://dotnet.microsoft.com/download/dotnet/9.0) 或更高的兼容 SDK
-- Windows x64，或 Ubuntu 24.04 x64
+- Windows x64；Web 部署服务器使用 Ubuntu Server 24.04 x64
 - Git
 
 克隆并构建：
@@ -71,6 +77,14 @@ dotnet run --project src/VisionStudio.App
 ```
 
 应用启动后先新建或打开项目。仓库中的 `samples/DemoProject/DemoProject.vstudio` 可用于查看示例工作流；如需运行示例，请通过“加载图像”节点重新选择一张本地图像。
+
+### 启动项目运行平台
+
+```bash
+dotnet run --project src/VisionStudio.Runtimes.App -- samples/DemoProject/DemoProject.vstudio
+```
+
+运行平台直接读取 `.vstudio`，复用现有 `WorkflowExecutor`，支持单图片、图片文件夹、视频、EmguCV 相机和模拟输入，以及连续、定时和手动触发。它不执行导出的 C# 脚本。
 
 ### 启动 Web 端
 
@@ -126,7 +140,9 @@ ProjectName/
 ```powershell
 ./scripts/test-changes.ps1 -Dimension Workflow
 ./scripts/test-changes.ps1 -Dimension Operators,Project
+./scripts/test-changes.ps1 -Dimension Ai
 ./scripts/test-changes.ps1 -Dimension Web
+./scripts/test-changes.ps1 -Dimension CodeStyle -NoBuild
 ```
 
 发布候选版本可运行：
@@ -140,26 +156,32 @@ ProjectName/
 ## 构建发布包
 
 ```powershell
-# Windows / Ubuntu 桌面包
-./scripts/publish-desktop.ps1 -Platform All -Version 1.0.0
+# Windows 桌面包
+./scripts/publish-desktop.ps1 -Platform Windows -Version 2.0.0
 
 # Ubuntu Server Web 包
-./scripts/publish-web.ps1 -Version 1.0.0
+./scripts/publish-web.ps1 -Version 2.0.0
 
-# Windows / Linux 安装程序
-./scripts/build-installers.ps1 -Platform All -Version 1.0.0
+# Windows 安装程序
+./scripts/build-installers.ps1 -Platform Windows -Version 2.0.0
 ```
 
-所有生成物写入被 Git 忽略的 `artifacts/`。发布前请阅读[多平台发布说明](docs/platform-release.md)，并自行确认第三方原生运行库的分发许可。
+所有生成物写入被 Git 忽略的 `artifacts/`。V2.0 正式发布 Windows x64 桌面版和 Ubuntu Server Web，暂不发布 Linux 桌面安装包，也不包含 Android/iOS。Windows 安装包同时包含编辑器、CLI 和项目运行平台；AI 模型与 Provider 插件不嵌入安装包。发布前请阅读[多平台发布说明](docs/platform-release.md)，并自行确认第三方原生运行库和模型的分发许可。
 
 ## 文档
 
+- [V2.0.0 更新说明](CHANGELOG.md)
+- [V2.0 发布范围与需求追踪矩阵](docs/v2-release-scope-and-traceability.md)
+- [V2.0 发布前复核报告](docs/v2-release-readiness-audit.md)
+- [项目讲解手册（面向项目介绍与答疑）](docs/project-handbook/00-reading-guide.md)
 - [架构设计](docs/architecture.md)
 - [开发说明](docs/development.md)
 - [产品与技术边界](docs/boundaries.md)
 - [AI 工作流自动化 API](docs/ai-workflow-automation-api.md)
 - [算子命名与介绍规范](docs/operator-naming-and-description-standard.md)
 - [界面规范](docs/ui-style-guide.md)
+- [Google 代码风格规范](docs/code-style.md)
+- [代码规范审查报告](docs/code-review-report.md)
 - [Web 部署](docs/web-deployment.md)
 - [测试规范](docs/testing.md)
 

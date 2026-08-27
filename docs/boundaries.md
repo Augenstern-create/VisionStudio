@@ -1,6 +1,6 @@
 # 产品与技术边界
 
-## 第一版包含
+## V2.0 包含
 
 - 启动项目页、项目创建/打开/保存、最近项目索引、自动保存目录和工作流快照。
 - 可视节点画布、节点移动、拖拽端口连接、圆角正交线路、宽命中选择/删除连接、中文属性说明。
@@ -8,20 +8,26 @@
 - 可直接执行的常用 OpenCV 路径：颜色空间、ROI/Resize/Rotate/Flip/Split、均值/方框/高斯/中值/双边滤波、Normalize/CLAHE/直方图、普通/Otsu/Triangle/自适应/InRange 阈值、七种形态学、DistanceTransform/Watershed、Canny/Sobel/Scharr/Laplacian、轮廓/连通域/Blob 筛选、常用轮廓测量、模板匹配、Hough 线圆、图像算术、统计、DFT、几何和逻辑。
 - DAG 校验、环检测、缺失输入检测、取消、耗时和资源释放。
 - 点击节点自动预览，按祖先切片执行，持久化图像缓存和基于上游内容键的失效传播。
-- 自动导出 C# 算法类到项目 `output` 目录；基础流程为独立 EmguCV 源码，扩展流程为运行时支持版源码。
+- 自动导出 C# 算法类到项目 `output` 目录；仅生成可脱离 Vision Studio 运行时的独立 EmguCV 源码，暂未覆盖的算子明确拒绝导出。
 - 最近 100 步会话内 Ctrl+Z 撤销和持久化 JSONL 操作记录。
 - CLI 创建/校验/运行/导出。
 - UI 无关的 AI 工作流自动化接口：目录查询、快照、批量事务编辑、版本冲突、幂等、执行和项目内结果资源。
+- AI 对话工作台、本地与远程 OpenAI 兼容模型配置、按模型/项目隔离的上下文、图片节点引用和受控 Graph Action。主程序不内置模型或推理 Provider。
+- 可选 llama.cpp Provider 插件和用户自行准备的本地模型；预制模型一键下载保留为实验入口，不属于 V2.0 已验收能力。
+- `VisionStudio.Runtimes.App` 项目运行平台：直接打开 `.vstudio`，复用 `WorkflowExecutor`，支持单次及连续检测、状态机、有界帧队列、连续/定时/手动触发和完整结果映射。
+- Runtime 的单图片、图片文件夹、视频、EmguCV 通用相机和模拟输入。Runtime 与编辑器、CLI 一同进入 Windows 主安装包；Linux 打包工程保留但本次不发布。
+- Windows x64 桌面/运行平台，以及 Ubuntu Server 24.04 x64 Web 部署包。
 
 ## 明确不包含
 
-- 相机厂商 SDK、PLC、GPU/CUDA、TensorRT 与公司私有 C++ SDK。Camera 当前使用 OpenCV 通用采集。
+- 相机厂商 SDK、PLC、真实外部硬触发适配器、GPU/CUDA、TensorRT 与公司私有 C++ SDK。Runtime 当前使用 OpenCV 通用相机；手动触发接口只为以后适配硬件保留边界。
 - AI 节点已定义中文属性、输入输出和模型路径约定，但不内置模型，也不把“基础预览”视为推理结果；接入 ONNX Runtime/DNN 后才能用于实际分类、检测、分割与 OCR。
 - ORB/SIFT/FLANN、完整相机标定、卡尺和世界坐标等高级节点当前提供稳定端口/参数契约和基础预览，尚未达到计量或生产验收精度。
-- 手机端完整画布、多人协同、云同步、账户权限。
-- AI 对话模型、提示词、HTTP/MCP 传输层、身份认证和高风险操作确认界面；本阶段完成的是稳定应用服务接口。
-- 任意循环、条件分支、流式视频调度、跨进程执行。
-- 自动生成最终业务 EXE；第一版导出 `.cs`，Runner/独立项目发布留作后续。
+- Linux 桌面安装包、Android/iOS、手机端完整画布、多人协同、云同步、账户权限。V2.0 明确不发布 Linux 桌面或 Android/iOS 版本。
+- 模型和 llama.cpp 二进制不嵌入主安装包；标准模型与运行时由用户在设置中确认后下载，第三方许可证独立展示。
+- 任意工作流循环和条件分支；连续采集属于 Runtime 外层调度，不改变 DAG 为循环图。
+- 厂商采集、检测记录长期存储、MES/数据管理系统上传；这些能力通过 `IFrameSource`、触发和结果消费者扩展，不属于 V2.0 交付。
+- 自动生成最终业务 EXE。编辑器继续导出可独立编译的 `.cs`，Runtime 直接执行 `.vstudio`，两者用途分离。
 - 跨应用重启的撤销栈、Redo、操作日志回放；关闭应用后使用工作流快照恢复。
 - 对损坏项目的自动修复；只提供可诊断的校验错误与快照恢复基础。
 - 缓存配额、LRU 清理及浮点/多维 Mat 的无损缓存格式；PNG 缓存适用于常规预览图，结构化值使用 JSON，`Any/Collection/Matrix` 暂不持久化。
@@ -38,4 +44,4 @@
 
 ## 跨平台边界
 
-核心与代码生成可跨平台构建。桌面 UI 使用 Avalonia，但 EmguCV 原生包必须按目标 RID 配置。第一版 CI 和验收基线是 Windows x64；Linux 是下一验收平台，Android/iOS 仅是架构预留。
+核心与代码生成可跨平台构建。桌面 UI 使用 Avalonia，但 EmguCV 原生包必须按目标 RID 配置。V2.0 的稳定发布和验收范围只包含 Windows x64 桌面版与 Ubuntu Server 24.04 x64 Web；Linux 桌面版、Android/iOS 不在本次正式发布范围内。

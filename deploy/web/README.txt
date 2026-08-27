@@ -1,4 +1,4 @@
-Vision Studio Web 1.0.0 - Ubuntu 24.04 x64
+Vision Studio Web 2.0.0 - Ubuntu 24.04 x64
 
 1. Install native dependencies:
    sudo ./install-dependencies.sh

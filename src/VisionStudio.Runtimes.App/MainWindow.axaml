@@ -1,0 +1,190 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:VisionStudio.Runtimes.App"
+        x:Class="VisionStudio.Runtimes.App.MainWindow"
+        Title="Vision Studio Runtime" Width="1520" Height="940"
+        MinWidth="1180" MinHeight="720" Icon="/Assets/VisionStudio.ico">
+  <Grid RowDefinitions="86,*,26">
+    <Border Grid.Row="0" Background="#181818" BorderBrush="#383838"
+            BorderThickness="0,0,0,1">
+      <Grid RowDefinitions="42,42" Margin="12,0">
+        <Grid ColumnDefinitions="Auto,18,Auto,8,220,8,Auto,*,Auto,8,Auto">
+        <Button Content="打开项目" Click="OpenProject_Click" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2" Text="采集源" VerticalAlignment="Center" />
+        <ComboBox x:Name="SourceKindCombo" Grid.Column="4" VerticalAlignment="Center">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="local:RuntimeSourceOption">
+              <TextBlock Text="{Binding DisplayName}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <TextBox x:Name="SourceValueText" Grid.Column="6" Width="260"
+                 VerticalAlignment="Center"
+                 PlaceholderText="项目内图片、目录、视频或相机编号" />
+        <TextBlock x:Name="TitleText" Grid.Column="7" Text="未加载项目"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <Button Grid.Column="8" Content="保存运行配置" Click="SaveProfile_Click"
+                VerticalAlignment="Center" />
+        <Button x:Name="RunButton" Grid.Column="10" Classes="primary"
+                Content="运行一次" IsEnabled="False" Click="Run_Click"
+                VerticalAlignment="Center" />
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,8,150,16,Auto,8,100,16,Auto,8,130,16,Auto,8,70,*,Auto,8,Auto,8,Auto,8,Auto">
+          <TextBlock Text="触发" VerticalAlignment="Center" />
+          <ComboBox x:Name="TriggerKindCombo" Grid.Column="2">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="local:RuntimeTriggerOption">
+                <TextBlock Text="{Binding DisplayName}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Grid.Column="4" Text="间隔 ms" VerticalAlignment="Center" />
+          <TextBox x:Name="IntervalText" Grid.Column="6" Text="500" />
+          <TextBlock Grid.Column="8" Text="队列策略" VerticalAlignment="Center" />
+          <ComboBox x:Name="QueueModeCombo" Grid.Column="10">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="local:RuntimeQueueOption">
+                <TextBlock Text="{Binding DisplayName}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Grid.Column="12" Text="容量" VerticalAlignment="Center" />
+          <TextBox x:Name="QueueCapacityText" Grid.Column="14" Text="4" />
+          <StackPanel Grid.Column="15" HorizontalAlignment="Center"
+                      VerticalAlignment="Center" Orientation="Horizontal" Spacing="12">
+            <TextBlock x:Name="RuntimeStateText" Text="就绪" Foreground="#4FC1FF" />
+            <TextBlock x:Name="RuntimeCompactStatisticsText"
+                       Text="采集 0 · 处理 0 · 丢弃 0 · 队列 0/4"
+                       Foreground="#9A9A9A" />
+          </StackPanel>
+          <Button x:Name="StartButton" Grid.Column="16" Content="开始连续运行"
+                  Click="Start_Click" IsEnabled="False" />
+          <Button x:Name="PauseButton" Grid.Column="18" Content="暂停"
+                  Click="Pause_Click" IsEnabled="False" />
+          <Button x:Name="TriggerButton" Grid.Column="20" Content="触发一次"
+                  Click="Trigger_Click" IsEnabled="False" />
+          <Button x:Name="StopButton" Grid.Column="22" Content="停止"
+                  Click="Stop_Click" IsEnabled="False" />
+        </Grid>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1" ColumnDefinitions="300,5,*,5,430">
+      <Border Grid.Column="0" Classes="panel" BorderThickness="0,0,1,0">
+        <Grid RowDefinitions="72,42,*">
+          <StackPanel Margin="14,10" Spacing="3">
+            <TextBlock x:Name="ProjectNameText" Text="未加载项目"
+                       FontSize="17" FontWeight="SemiBold" />
+            <TextBlock x:Name="ProjectPathText" Foreground="#8F8F8F"
+                       FontSize="11" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <Border Grid.Row="1" BorderBrush="#383838" BorderThickness="0,1,0,1">
+            <TextBlock Text="工作流节点" FontSize="15" FontWeight="SemiBold"
+                       Margin="14,0" VerticalAlignment="Center" />
+          </Border>
+          <ListBox x:Name="NodeList" Grid.Row="2" Margin="8">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="local:RuntimeNodeItem">
+                <StackPanel Margin="0,2,0,6">
+                  <Border Background="#2D2D30" BorderBrush="#454545"
+                          BorderThickness="1" CornerRadius="4" Padding="10,8">
+                    <StackPanel>
+                      <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Type}" Foreground="#9A9A9A" FontSize="11" />
+                    </StackPanel>
+                  </Border>
+                  <TextBlock Text="{Binding ConnectorText}" Foreground="#4FC1FF"
+                             HorizontalAlignment="Center" TextAlignment="Center" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </Border>
+      <GridSplitter Grid.Column="1" Background="#333333" />
+
+      <Grid Grid.Column="2" RowDefinitions="42,*">
+        <Border Background="#202020" BorderBrush="#383838" BorderThickness="0,0,0,1">
+          <Grid ColumnDefinitions="*,Auto" Margin="14,0">
+            <TextBlock Text="当前检测结果" FontSize="16" FontWeight="SemiBold"
+                       VerticalAlignment="Center" />
+            <TextBlock x:Name="RunSummaryText" Grid.Column="1" Foreground="#AFAFAF"
+                       VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+        <Border Grid.Row="1" Background="#111111" Margin="12"
+                BorderBrush="#383838" BorderThickness="1">
+          <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                        VerticalScrollBarVisibility="Auto">
+            <Image x:Name="ResultImage" Stretch="Uniform" />
+          </ScrollViewer>
+        </Border>
+      </Grid>
+      <GridSplitter Grid.Column="3" Background="#333333" />
+
+      <Border Grid.Column="4" Classes="panel" BorderThickness="1,0,0,0">
+        <TabControl>
+          <TabItem Header="检测结果">
+            <Grid RowDefinitions="Auto,*">
+              <StackPanel Margin="14,12" Spacing="4">
+                <TextBlock x:Name="ResultStatusText" Text="尚未运行"
+                           FontSize="20" FontWeight="SemiBold" />
+                <TextBlock x:Name="CaptureInfoText" Foreground="#999999"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+              <ListBox x:Name="ResultValueList" Grid.Row="1" Margin="8">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="local:RuntimeResultValue">
+                    <Border Background="#292929" BorderBrush="#414141"
+                            BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,3">
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding DisplayText}" FontSize="16"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding NodePort}" Foreground="#8F8F8F"
+                                   FontSize="11" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </Grid>
+          </TabItem>
+          <TabItem Header="节点耗时">
+            <ListBox x:Name="TimingList" Margin="8">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="local:RuntimeTimingItem">
+                  <Grid ColumnDefinitions="*,Auto" Margin="8,5">
+                    <TextBlock Text="{Binding NodeName}" />
+                    <TextBlock Grid.Column="1" Text="{Binding DurationText}"
+                               Foreground="#4FC1FF" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </TabItem>
+          <TabItem Header="诊断">
+            <TextBox x:Name="DiagnosticsText" IsReadOnly="True" AcceptsReturn="True"
+                     TextWrapping="Wrap" FontFamily="Cascadia Mono,Consolas"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto" />
+          </TabItem>
+          <TabItem Header="统计">
+            <StackPanel Margin="16" Spacing="10">
+              <TextBlock Text="连续采集统计" FontSize="17" FontWeight="SemiBold" />
+              <TextBlock x:Name="RuntimeStatisticsText" Text="尚未开始连续运行"
+                         TextWrapping="Wrap" FontFamily="Cascadia Mono,Consolas" />
+              <TextBlock Text="队列只在采集线程与工作流执行线程之间传递帧；丢帧策略不会改变工作流及结果映射。"
+                         Foreground="#999999" TextWrapping="Wrap" />
+            </StackPanel>
+          </TabItem>
+        </TabControl>
+      </Border>
+    </Grid>
+
+    <Border Grid.Row="2" Background="#007ACC">
+      <TextBlock x:Name="StatusText" Text="请选择 Vision Studio 项目"
+                 Margin="10,0" VerticalAlignment="Center" Foreground="White"
+                 FontSize="11" />
+    </Border>
+  </Grid>
+</Window>

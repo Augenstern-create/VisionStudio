@@ -2,7 +2,7 @@
 
 ## 1. 架构目标
 
-Vision Studio 是内部使用的视觉算法快速验证工具。核心体验是“选择项目 → 添加节点 → 拖拽连接端口 → 点击节点看结果 → 调参数即时刷新 → 导出普通 C#”。第一版优先 Windows 桌面，同时让核心库保持跨平台；移动端只保留未来兼容性，不承诺第一版完整编辑体验。
+Vision Studio V2.0 是视觉算法设计、验证与运行工具。编辑器负责“选择项目 → 添加节点 → 连接端口 → 点击节点看结果 → 调参数即时刷新 → 导出普通 C#”；独立的 `VisionStudio.Runtimes.App` 直接打开同一 `.vstudio` 项目，负责单次或连续检测。V2.0 正式发布 Windows x64 桌面版和 Ubuntu Server Web；Linux 桌面版暂缓发布，Android/iOS 明确不包含在内。
 
 关键决策：
 
@@ -37,10 +37,13 @@ VisionStudio.Web (ASP.NET Core + browser UI)
 - `Operators.OpenCv`：EmguCV 算子及 `Mat` 生命周期管理。
 - `CodeGen`：把 DAG 展开为不依赖 Studio Runtime 的普通 EmguCV C#。
 - `App`：启动项目页、圆角正交节点画布、中文属性编辑和选中节点预览。
+- `Runtimes.App`：直接加载 `.vstudio`，注入运行时帧并协调输入源、触发、状态机、有界队列和结果显示。
 - `Cli`：创建、校验、执行和导出，作为自动化入口。
 - `Web`：提供响应式浏览器工作台、受令牌保护的 HTTP API、服务器项目隔离及 OpenCV 服务端执行。
 
 AI 自动化通过 `WorkflowAutomationApiHost` 获取当前项目会话。`WorkflowAutomationSession` 位于 Core，负责目录查询、快照、事务编辑、乐观并发、幂等、项目保存和事件；`OpenCvWorkflowAutomationRunner` 位于算子层，负责执行并把可视结果发布到项目缓存。Avalonia 只订阅事件刷新画布与预览，完整协议见 `docs/ai-workflow-automation-api.md`。
+
+Runtime 不执行导出的 C#。它通过 `Input.RuntimeFrame` 把相机、图片、文件夹、视频或模拟源的每一帧注入现有 DAG，继续使用 `WorkflowExecutor` 和项目级 `resultMappings`。连续循环、触发和队列处于工作流外层，不把 DAG 改造成循环图；详细设计见 `docs/runtimes-app-architecture.md`。
 
 ## 3. 核心模型
 
@@ -83,7 +86,7 @@ ProjectName/
 
 外部图片通过属性面板导入时立即复制到 `images/input`，工作流只保存项目相对路径。`images/cache` 保存可重用节点输出，`images/output` 保存业务导出图像。
 
-桌面端 C# 导出固定写入 `output/GeneratedVisionAlgorithm.cs`，不弹出外部路径选择框。只包含早期基础节点时生成独立 EmguCV 类；包含扩展算子时生成引用 `VisionStudio.Core` 与 `VisionStudio.Operators.OpenCv` 的运行时支持版，保证完整算子目录都可导出执行。`generated` 保留给 CLI 或模板生成。
+桌面端 C# 导出固定写入 `output/GeneratedVisionAlgorithm.cs`，不弹出外部路径选择框。导出以当前选中的图像结果节点为目标，只包含该节点及其上游依赖；存在多个结果分支且未指定目标时拒绝猜测。生成器把算子展开为普通 EmguCV 调用，不允许引用 `VisionStudio.Core`、`WorkflowExecutor` 或序列化工作流包装器；尚未实现独立代码生成的算子会明确拒绝导出，避免产生无法脱离软件运行的伪代码。CLI 可在输出路径后传入目标节点 ID，Web 端随导出请求提交当前选中节点。
 
 ## 6. 操作历史与撤销
 

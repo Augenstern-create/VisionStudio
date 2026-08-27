@@ -10,6 +10,11 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="12.1.0" />
+    <!-- AvaloniaVS 12.2 can fail to inject these preview-only packages for net9.0. -->
+    <PackageReference Include="Avalonia.Headless" Version="12.1.0" PrivateAssets="all"
+                      Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="Avalonia.Markup.Xaml.Loader" Version="12.1.0" PrivateAssets="all"
+                      Condition="'$(Configuration)' == 'Debug'" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.0" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.0" />
     <PackageReference Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" Condition="'$(RuntimeIdentifier)' == 'ubuntu-x64'" />
@@ -18,9 +23,12 @@
     <ProjectReference Include="..\VisionStudio.Core\VisionStudio.Core.csproj" />
     <ProjectReference Include="..\VisionStudio.Operators.OpenCv\VisionStudio.Operators.OpenCv.csproj" />
     <ProjectReference Include="..\VisionStudio.CodeGen\VisionStudio.CodeGen.csproj" />
+    <ProjectReference Include="..\VisionStudio.Ai.Abstractions\VisionStudio.Ai.Abstractions.csproj" />
+    <ProjectReference Include="..\VisionStudio.Ai\VisionStudio.Ai.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\Strings.*.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="config\*.json" CopyToOutputDirectory="PreserveNewest" />
     <AvaloniaResource Include="Assets\VisionStudio.ico" />
   </ItemGroup>
   <ItemGroup Condition="'$(RuntimeIdentifier)' == 'ubuntu-x64'">

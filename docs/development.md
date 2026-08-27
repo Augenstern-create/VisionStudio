@@ -1,5 +1,13 @@
 # 开发说明
 
+## Visual Studio 与 Avalonia 预览器
+
+`VisionStudio.App` 在 Debug 配置中显式引用 `Avalonia.Headless` 和
+`Avalonia.Markup.Xaml.Loader`。这是 AvaloniaVS 12.2 在 .NET 9 项目中自动注入预览依赖失败时的兼容措施；依赖使用 `PrivateAssets="all"`，并且只在 Debug 配置生效，不进入 Release 构建或安装包。
+
+若预览器曾显示 `Previewer Stopped`，先完成 Debug 构建，再点击设计器中的
+`Restart Previewer`。正常状态下，VS 错误列表中的错误、警告和消息均为 0。
+
 ## 环境
 
 - .NET SDK 9.0+
@@ -64,6 +72,7 @@ dotnet publish src/VisionStudio.App -c Release -r win-x64 --self-contained true
 - 通用界面、分类和需要修订措辞的算子名称/介绍写入 `Resources/Strings.<语言代码>.json`。新增语言文件会被项目页自动发现，资源键规则见 `docs/operator-naming-and-description-standard.md`。
 - 每次改变工作流前只记录一份撤销快照；连续拖动节点只产生一条“移动算子”记录。新增编辑行为必须同时接入撤销快照和操作日志。
 - UI 的 C# 导出路径固定为项目 `output/GeneratedVisionAlgorithm.cs`；CLI 仍允许显式指定目标路径。
+- 多分支工作流导出前应选中目标结果节点；CLI 用 `export <workflow.vflow> <output.cs> [target-node-id]` 指定同一语义。
 - UI 导出成功后通过系统外壳打开项目 `output` 文件夹。
 - 结果预览默认适应窗口，滚轮和按钮缩放只改变显示尺寸，不触发算法重新执行；操作记录面板默认折叠。
 - 追加操作记录必须触发防抖自动保存；自动保存写主工作流和 `.project/autosave`，使用 `createSnapshot: false` 避免产生大量快照。

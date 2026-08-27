@@ -2,7 +2,7 @@
 param(
     [ValidateSet('Windows', 'Linux', 'All')]
     [string]$Platform = 'All',
-    [string]$Version = '1.0.0'
+    [string]$Version = '2.0.0'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -10,6 +10,7 @@ $workspaceRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $releaseRoot = [System.IO.Path]::GetFullPath((Join-Path $workspaceRoot 'artifacts\releases'))
 $appProject = Join-Path $workspaceRoot 'src\VisionStudio.App\VisionStudio.App.csproj'
 $cliProject = Join-Path $workspaceRoot 'src\VisionStudio.Cli\VisionStudio.Cli.csproj'
+$runtimeProject = Join-Path $workspaceRoot 'src\VisionStudio.Runtimes.App\VisionStudio.Runtimes.App.csproj'
 [System.IO.Directory]::CreateDirectory($releaseRoot) | Out-Null
 
 Add-Type -TypeDefinition @'
@@ -30,7 +31,8 @@ public static class VisionStudioTarPackage
             var relative = Path.GetRelativePath(sourceDirectory, path).Replace('\\', '/');
             var entry = new PaxTarEntry(TarEntryType.RegularFile, relative)
             {
-                Mode = relative == "VisionStudio" || relative == "VisionStudio.Cli" || relative.EndsWith(".sh", StringComparison.Ordinal)
+                Mode = relative == "VisionStudio" || relative == "VisionStudio.Cli" ||
+                    relative == "VisionStudio.Runtimes.App" || relative.EndsWith(".sh", StringComparison.Ordinal)
                     ? UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
                       UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
                       UnixFileMode.OtherRead | UnixFileMode.OtherExecute
@@ -66,13 +68,18 @@ function Publish-Platform([string]$Name, [string]$Rid) {
     & dotnet publish $cliProject -c Release -r $Rid --self-contained true --nologo `
         -p:Version=$Version -p:PublishTrimmed=false -p:DebugType=None -p:DebugSymbols=false -o $staging
     if ($LASTEXITCODE -ne 0) { throw "$Name CLI publish failed." }
-
+    & dotnet publish $runtimeProject -c Release -r $Rid --self-contained true --nologo `
+        -p:Version=$Version -p:PublishTrimmed=false -p:DebugType=None -p:DebugSymbols=false -o $staging
+    if ($LASTEXITCODE -ne 0) { throw "$Name Runtime publish failed." }
     $readme = @"
 Vision Studio $Version ($Rid)
 
 This is a self-contained release; a separate .NET installation is not required.
 Projects use the .vstudio extension. Keep all files in this directory together.
-VisionStudio is the desktop application. VisionStudio.Cli is the command-line validation, run and export tool.
+VisionStudio is the workflow editor. VisionStudio.Runtimes.App is the project runtime for single-frame and continuous inspection. VisionStudio.Cli is the command-line validation, workflow run and export tool.
+AI models are configured under the installation directory's config folder through File > Settings. The left activity bar switches between Operators and AI Chat.
+Local AI is optional. Install a provider plugin under the installation directory's plugins folder, or configure a remote OpenAI-compatible endpoint.
+AI models, llama.cpp, CUDA libraries, and provider plugins are downloaded separately and are not embedded in this package.
 "@
     if ($Rid -eq 'ubuntu-x64') {
         $readme += @"
@@ -83,6 +90,8 @@ sudo apt install libgeotiff5 liblapack3 libblas3 libopenjp2-7 libgstreamer-plugi
 "@
     }
     [System.IO.File]::WriteAllText((Join-Path $staging 'RELEASE.txt'), $readme, [System.Text.UTF8Encoding]::new($false))
+    & (Join-Path $PSScriptRoot 'test-ai-packaging.ps1') -Path $staging
+    if ($LASTEXITCODE -ne 0) { throw "$Name package contains optional AI payload." }
 
     if ($Rid -eq 'win-x64') {
         $archive = Join-Path $releaseRoot "$packageName.zip"

@@ -31,18 +31,18 @@ VisionStudio.Web (ASP.NET Core)
 在开发机执行：
 
 ```powershell
-./scripts/publish-web.ps1 -Version 1.0.0
+./scripts/publish-web.ps1 -Version 2.0.0
 ./scripts/test-changes.ps1 -Dimension Web -NoBuild
 ```
 
-输出是 `artifacts/web/VisionStudio.Web-1.0.0-ubuntu-x64.tar.gz` 及对应 `.sha256`。这是 Ubuntu 24.04 x64 自包含包，不需要在服务器安装 .NET，也不是安装程序。
+输出是 `artifacts/web/VisionStudio.Web-2.0.0-ubuntu-x64.tar.gz` 及对应 `.sha256`。这是 Ubuntu 24.04 x64 自包含包，不需要在服务器安装 .NET，也不是安装程序。
 
 ## Ubuntu Server 部署
 
 ```bash
-sha256sum -c VisionStudio.Web-1.0.0-ubuntu-x64.tar.gz.sha256
+sha256sum -c VisionStudio.Web-2.0.0-ubuntu-x64.tar.gz.sha256
 sudo mkdir -p /opt/visionstudio-web
-sudo tar -xzf VisionStudio.Web-1.0.0-ubuntu-x64.tar.gz -C /opt/visionstudio-web
+sudo tar -xzf VisionStudio.Web-2.0.0-ubuntu-x64.tar.gz -C /opt/visionstudio-web
 cd /opt/visionstudio-web
 sudo ./install-dependencies.sh
 sudo cp .env.example .env

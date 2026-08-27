@@ -1,93 +1,207 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="color-scheme" content="dark light">
-  <title>Vision Studio Web</title>
-  <link rel="icon" href="assets/visionstudio.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body data-theme="dark">
-  <div id="authView" class="overlay">
-    <form id="authForm" class="dialog auth-card">
-      <img src="assets/visionstudio.svg" width="62" height="62" alt="Vision Studio">
-      <div><h1>Vision Studio Web</h1><p data-i18n="authHint">输入服务器访问令牌</p></div>
-      <label><span data-i18n="token">访问令牌</span><input id="tokenInput" type="password" autocomplete="current-password" required></label>
-      <button class="primary" type="submit" data-i18n="login">进入工作台</button>
-      <p id="authError" class="error" aria-live="polite"></p>
-    </form>
-  </div>
-
-  <div id="app" class="app hidden">
-    <header class="titlebar">
-      <button id="homeButton" class="brand" aria-label="项目页"><img src="assets/visionstudio.svg" alt=""><strong>Vision Studio</strong><span>Web</span></button>
-      <nav>
-        <button id="fileMenuButton" data-i18n="file">文件</button>
-        <button id="editMenuButton" data-i18n="quick">快捷操作</button>
-        <button id="viewMenuButton" data-i18n="view">视图</button>
-        <button id="helpButton" data-i18n="help">帮助</button>
-      </nav>
-      <label class="global-search"><span>⌕</span><input id="globalSearch" data-i18n-placeholder="search" placeholder="搜索算子"></label>
-      <div class="title-actions">
-        <button id="languageButton" title="Language">中 / EN</button>
-        <button id="themeButton" title="Theme">◐</button>
-        <span id="projectBadge" class="project-badge"></span>
-      </div>
-    </header>
-
-    <main id="projectView" class="project-view">
-      <section class="welcome">
-        <img src="assets/visionstudio.svg" alt="" width="78" height="78">
-        <div><h1 data-i18n="welcome">视觉算法工作室</h1><p data-i18n="welcomeHint">在服务器上创建或打开一个项目</p></div>
-      </section>
-      <section class="project-actions">
-        <button id="newProjectButton" class="action-card"><span class="action-icon blue">＋</span><span><strong data-i18n="newProject">新建项目</strong><small data-i18n="newProjectHint">创建完整项目目录与工作流</small></span></button>
-        <button id="refreshProjectsButton" class="action-card"><span class="action-icon amber">↻</span><span><strong data-i18n="refresh">刷新项目</strong><small data-i18n="refreshHint">重新读取服务器项目目录</small></span></button>
-      </section>
-      <section class="recent"><h2 data-i18n="serverProjects">服务器项目</h2><div id="projectList" class="project-list"></div></section>
-    </main>
-
-    <main id="editorView" class="editor hidden">
-      <aside id="palette" class="palette panel">
-        <div class="panel-title"><strong data-i18n="operators">算子</strong><button class="mobile-close" data-close="palette">×</button></div>
-        <div id="operatorCategories" class="operator-categories"></div>
-      </aside>
-      <section class="workspace">
-        <div class="workspace-toolbar">
-          <button id="paletteToggle" class="mobile-only">☰</button>
-          <span class="green-dot"></span><span id="workflowTitle">Main</span>
-          <span class="spacer"></span>
-          <button id="undoButton" title="Ctrl+Z" data-i18n="undo">撤销</button>
-          <button id="layoutButton" data-i18n="layout">自动排版</button>
-          <button id="exportButton" data-i18n="export">导出 C#</button>
-          <button id="inspectorToggle" class="mobile-only">属性</button>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark light" />
+    <title>Vision Studio Web</title>
+    <link rel="icon" href="assets/visionstudio.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-theme="dark">
+    <div id="authView" class="overlay">
+      <form id="authForm" class="dialog auth-card">
+        <img
+          src="assets/visionstudio.svg"
+          width="62"
+          height="62"
+          alt="Vision Studio"
+        />
+        <div>
+          <h1>Vision Studio Web</h1>
+          <p data-i18n="authHint">输入服务器访问令牌</p>
         </div>
-        <div id="canvasViewport" class="canvas-viewport" tabindex="0">
-          <div id="canvasWorld" class="canvas-world">
-            <svg id="edgeLayer" class="edge-layer" width="6000" height="4000" aria-label="工作流连接"></svg>
-            <div id="nodeLayer" class="node-layer"></div>
+        <label
+          ><span data-i18n="token">访问令牌</span
+          ><input
+            id="tokenInput"
+            type="password"
+            autocomplete="current-password"
+            required
+        /></label>
+        <button class="primary" type="submit" data-i18n="login">
+          进入工作台
+        </button>
+        <p id="authError" class="error" aria-live="polite"></p>
+      </form>
+    </div>
+
+    <div id="app" class="app hidden">
+      <header class="titlebar">
+        <button id="homeButton" class="brand" aria-label="项目页">
+          <img src="assets/visionstudio.svg" alt="" /><strong
+            >Vision Studio</strong
+          ><span>Web</span>
+        </button>
+        <nav>
+          <button id="fileMenuButton" data-i18n="file">文件</button>
+          <button id="editMenuButton" data-i18n="quick">快捷操作</button>
+          <button id="viewMenuButton" data-i18n="view">视图</button>
+          <button id="helpButton" data-i18n="help">帮助</button>
+        </nav>
+        <label class="global-search"
+          ><span>⌕</span
+          ><input
+            id="globalSearch"
+            data-i18n-placeholder="search"
+            placeholder="搜索算子"
+        /></label>
+        <div class="title-actions">
+          <button id="languageButton" title="Language">中 / EN</button>
+          <button id="themeButton" title="Theme">◐</button>
+          <span id="projectBadge" class="project-badge"></span>
+        </div>
+      </header>
+
+      <main id="projectView" class="project-view">
+        <section class="welcome">
+          <img src="assets/visionstudio.svg" alt="" width="78" height="78" />
+          <div>
+            <h1 data-i18n="welcome">视觉算法工作室</h1>
+            <p data-i18n="welcomeHint">在服务器上创建或打开一个项目</p>
           </div>
-          <div id="emptyCanvas" class="empty-canvas"><span>◇</span><strong data-i18n="emptyCanvas">从左侧添加算子</strong><small data-i18n="emptyCanvasHint">拖动端口连接，点击算子查看结果</small></div>
-        </div>
-      </section>
-      <aside id="inspector" class="inspector panel">
-        <div class="panel-title"><strong data-i18n="resultAndProperties">结果与属性</strong><button class="mobile-close" data-close="inspector">×</button></div>
-        <section id="preview" class="preview"><div class="preview-empty"><span>◇</span><small data-i18n="selectNode">选择算子查看结果</small></div></section>
-        <div id="outputSummary" class="output-summary"></div>
-        <section id="properties" class="properties"></section>
-        <details id="operationsPanel" class="operations"><summary data-i18n="operations">操作记录</summary><div id="operationsList"></div></details>
-      </aside>
-      <footer class="statusbar"><span id="statusProject">Vision Studio Web</span><span id="statusText" data-i18n="ready">就绪</span><span class="spacer"></span><span id="statusRevision">Revision 0</span></footer>
-    </main>
-  </div>
+        </section>
+        <section class="project-actions">
+          <button id="newProjectButton" class="action-card">
+            <span class="action-icon blue">＋</span
+            ><span
+              ><strong data-i18n="newProject">新建项目</strong
+              ><small data-i18n="newProjectHint"
+                >创建完整项目目录与工作流</small
+              ></span
+            >
+          </button>
+          <button id="refreshProjectsButton" class="action-card">
+            <span class="action-icon amber">↻</span
+            ><span
+              ><strong data-i18n="refresh">刷新项目</strong
+              ><small data-i18n="refreshHint"
+                >重新读取服务器项目目录</small
+              ></span
+            >
+          </button>
+        </section>
+        <section class="recent">
+          <h2 data-i18n="serverProjects">服务器项目</h2>
+          <div id="projectList" class="project-list"></div>
+        </section>
+      </main>
 
-  <dialog id="newProjectDialog" class="dialog">
-    <form id="newProjectForm" method="dialog"><h2 data-i18n="newProject">新建项目</h2><label><span data-i18n="projectName">项目名称</span><input id="projectNameInput" maxlength="80" required></label><div class="dialog-actions"><button value="cancel" data-i18n="cancel">取消</button><button class="primary" value="default" data-i18n="create">创建</button></div></form>
-  </dialog>
-  <dialog id="aboutDialog" class="dialog about"><form method="dialog"><img src="assets/visionstudio.svg" alt="" width="54"><h2>Vision Studio Web</h2><p>1.0.0</p><p data-i18n="aboutText">服务器端 OpenCV 可视化工作流编辑器</p><button class="primary" value="cancel" data-i18n="close">关闭</button></form></dialog>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <input id="imageUpload" type="file" accept="image/png,image/jpeg,image/bmp,image/tiff,image/webp" hidden>
-  <script src="app.js" defer></script>
-</body>
+      <main id="editorView" class="editor hidden">
+        <aside id="palette" class="palette panel">
+          <div class="panel-title">
+            <strong data-i18n="operators">算子</strong
+            ><button class="mobile-close" data-close="palette">×</button>
+          </div>
+          <div id="operatorCategories" class="operator-categories"></div>
+        </aside>
+        <section class="workspace">
+          <div class="workspace-toolbar">
+            <button id="paletteToggle" class="mobile-only">☰</button>
+            <span class="green-dot"></span><span id="workflowTitle">Main</span>
+            <span class="spacer"></span>
+            <button id="undoButton" title="Ctrl+Z" data-i18n="undo">
+              撤销
+            </button>
+            <button id="layoutButton" data-i18n="layout">自动排版</button>
+            <button id="exportButton" data-i18n="export">导出 C#</button>
+            <button id="inspectorToggle" class="mobile-only">属性</button>
+          </div>
+          <div id="canvasViewport" class="canvas-viewport" tabindex="0">
+            <div id="canvasWorld" class="canvas-world">
+              <svg
+                id="edgeLayer"
+                class="edge-layer"
+                width="6000"
+                height="4000"
+                aria-label="工作流连接"
+              ></svg>
+              <div id="nodeLayer" class="node-layer"></div>
+            </div>
+            <div id="emptyCanvas" class="empty-canvas">
+              <span>◇</span
+              ><strong data-i18n="emptyCanvas">从左侧添加算子</strong
+              ><small data-i18n="emptyCanvasHint"
+                >拖动端口连接，点击算子查看结果</small
+              >
+            </div>
+          </div>
+        </section>
+        <aside id="inspector" class="inspector panel">
+          <div class="panel-title">
+            <strong data-i18n="resultAndProperties">结果与属性</strong
+            ><button class="mobile-close" data-close="inspector">×</button>
+          </div>
+          <section id="preview" class="preview">
+            <div class="preview-empty">
+              <span>◇</span
+              ><small data-i18n="selectNode">选择算子查看结果</small>
+            </div>
+          </section>
+          <div id="outputSummary" class="output-summary"></div>
+          <section id="properties" class="properties"></section>
+          <details id="operationsPanel" class="operations">
+            <summary data-i18n="operations">操作记录</summary>
+            <div id="operationsList"></div>
+          </details>
+        </aside>
+        <footer class="statusbar">
+          <span id="statusProject">Vision Studio Web</span
+          ><span id="statusText" data-i18n="ready">就绪</span
+          ><span class="spacer"></span
+          ><span id="statusRevision">Revision 0</span>
+        </footer>
+      </main>
+    </div>
+
+    <dialog id="newProjectDialog" class="dialog">
+      <form id="newProjectForm" method="dialog">
+        <h2 data-i18n="newProject">新建项目</h2>
+        <label
+          ><span data-i18n="projectName">项目名称</span
+          ><input id="projectNameInput" maxlength="80" required
+        /></label>
+        <div class="dialog-actions">
+          <button value="cancel" data-i18n="cancel">取消</button
+          ><button class="primary" value="default" data-i18n="create">
+            创建
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="aboutDialog" class="dialog about">
+      <form method="dialog">
+        <img src="assets/visionstudio.svg" alt="" width="54" />
+        <h2>Vision Studio Web</h2>
+        <p>2.0.0</p>
+        <p data-i18n="aboutText">服务器端 OpenCV 可视化工作流编辑器</p>
+        <button class="primary" value="cancel" data-i18n="close">关闭</button>
+      </form>
+    </dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <input
+      id="imageUpload"
+      type="file"
+      accept="image/png,image/jpeg,image/bmp,image/tiff,image/webp"
+      hidden
+    />
+    <script src="api-client.js" defer></script>
+    <script src="project-workspace.js" defer></script>
+    <script src="workflow-canvas.js" defer></script>
+    <script src="result-inspector.js" defer></script>
+    <script src="app.js" defer></script>
+  </body>
 </html>

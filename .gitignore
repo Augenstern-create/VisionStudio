@@ -45,6 +45,9 @@ src/VisionStudio.Web/data/
 **/snapshots/
 samples/DemoProject/images/input/
 samples/DemoProject/output/
+samples/DemoProject-1/
+build/visionai-test-runtime/
+build/*.onnx
 
 # Secrets and deployment-local configuration
 .env
@@ -58,6 +61,14 @@ secrets.json
 *.pem
 *.key
 *.snk
+
+# Local AI models, runtimes, profiles and downloaded provider payloads
+*.gguf
+*.ggml
+*.safetensors
+llama-server*
+models/
+.visionstudio/ai/
 
 # Logs, diagnostics and temporary files
 *.log
@@ -77,4 +88,3 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
-

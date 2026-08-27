@@ -24,6 +24,11 @@
     <ProjectReference Include="..\..\src\VisionStudio.Operators.OpenCv\VisionStudio.Operators.OpenCv.csproj" />
     <ProjectReference Include="..\..\src\VisionStudio.CodeGen\VisionStudio.CodeGen.csproj" />
     <ProjectReference Include="..\..\src\VisionStudio.App\VisionStudio.App.csproj" />
+    <ProjectReference Include="..\..\src\VisionStudio.Runtimes.App\VisionStudio.Runtimes.App.csproj" />
+    <ProjectReference Include="..\..\src\VisionStudio.Web\VisionStudio.Web.csproj" />
+    <ProjectReference Include="..\..\src\VisionStudio.Ai.Abstractions\VisionStudio.Ai.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\VisionStudio.Ai\VisionStudio.Ai.csproj" />
+    <ProjectReference Include="..\..\plugins\VisionStudio.Ai.LlamaCpp\VisionStudio.Ai.LlamaCpp.csproj" />
   </ItemGroup>
 
 </Project>
