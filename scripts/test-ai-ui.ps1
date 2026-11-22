@@ -6,7 +6,6 @@ $mainCode = (Get-ChildItem (Join-Path $workspaceRoot 'src\VisionStudio.App') -Fi
 $store = Get-Content (Join-Path $workspaceRoot 'src\VisionStudio.Ai\AiModelProfileStore.cs') -Raw
 $settings = Join-Path $workspaceRoot 'src\VisionStudio.App\SettingsWindow.cs'
 $chatControl = Join-Path $workspaceRoot 'src\VisionStudio.App\ChatMessageControl.cs'
-$standard = Join-Path $workspaceRoot 'src\VisionStudio.App\config\standard-models.json'
 
 foreach ($name in @('SettingsMenuItem', 'OperatorsActivityButton', 'AiActivityButton', 'OperatorSidebar', 'AiSidebar', 'AiModelComboBox', 'AiImageReferencesPanel', 'AiConversationPanel')) {
     if ($window -notmatch ('x:Name="' + $name + '"')) { throw "AI workbench element is missing: $name" }
@@ -19,7 +18,6 @@ if ($window -notmatch '<PathIcon Width="24" Height="24"' -or $window -match 'Con
 }
 if (!(Test-Path -LiteralPath $settings)) { throw 'Settings window is missing.' }
 if (!(Test-Path -LiteralPath $chatControl)) { throw 'Dedicated Avalonia chat message control is missing.' }
-if (!(Test-Path -LiteralPath $standard)) { throw 'Standard model catalog is missing.' }
 $settingsCode = Get-Content $settings -Raw
 if ($settingsCode -notmatch 'LoadRemoteEditor\(\);' -or $settingsCode -notmatch 'SaveRemoteEditor\(validate: false\)') {
     throw 'Remote model editor does not reload the selected profile or preserve edits while switching models.'
@@ -30,8 +28,14 @@ if ($store -notmatch 'AppContext\.BaseDirectory, "config"' -or $store -match 'Sp
 if ($mainCode -notmatch 'AiContextKey' -or $mainCode -notmatch 'AiModelComboBox_SelectionChanged') {
     throw 'Per-model conversation context switching is not implemented.'
 }
-if ($store -notmatch 'ai-local-models\.json' -or $store -notmatch 'ai-remote-models\.json' -or $store -notmatch 'EncryptedRemoteAiModelProfile') {
-    throw 'Local/remote model storage separation or remote secret encryption is missing.'
+if ($store -notmatch 'ai-remote-models\.json' -or $store -notmatch 'EncryptedRemoteAiModelProfile') {
+    throw 'Remote model storage or remote secret encryption is missing.'
+}
+if ($store -match 'ai-local-models' -or $store -match 'standard-models') {
+    throw 'Local model and standard catalog storage must be removed: only remote models are supported.'
+}
+if ($settingsCode -match '本地模型') {
+    throw 'Settings still expose a local model tab.'
 }
 if ($mainCode -notmatch 'AiImageReferenceCatalog' -or $mainCode -notmatch 'AiPrompt_Drop') {
     throw 'Image-node numbering and drag-to-prompt support is missing.'
@@ -51,4 +55,4 @@ if ($mainCode -notmatch 'history\.Concat\(\[new AiChatMessage\("user", text\)\]\
     throw 'AI send/error turns are not both persisted as distinguishable chat messages.'
 }
 
-Write-Output 'AI UI checks passed: model settings, embedded chat, selectable messages, fenced-code copy, quotes, image references and per-model contexts.'
+Write-Output 'AI UI checks passed: remote-only model settings, embedded assistant chat, proposal cards, selectable messages, quotes, image references and per-model contexts.'

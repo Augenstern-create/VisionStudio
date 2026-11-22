@@ -167,6 +167,15 @@ public static class ExtendedOperatorCatalog {
       R("Draw." + item.Item1, item.Item2, "显示", [I()], [O()], [S("value", "绘制内容", item.Item1 == "Text" ? "Vision Studio" : "")]);
     }
 
+    // Overlay operators take a second, geometry input so a shape can be drawn on the original
+    // image instead of on the binary mask it was measured from.
+    R("Draw.OverlayContours", "绘制轮廓（叠加）", "显示",
+        [I(), I("Contours", "轮廓集合", true, NodeValueType.Contours)], [O()],
+        [N("thickness", "线宽", 2, 1, 20)], "把轮廓集合用红色叠加绘制到底图上。");
+    R("Draw.OverlayEllipse", "绘制椭圆（叠加）", "显示",
+        [I(), I("Ellipse", "椭圆结果", true, NodeValueType.Any)], [O()],
+        [N("thickness", "线宽", 2, 1, 20)], "把拟合椭圆用红色叠加绘制到底图上。");
+
     var runtimeParameters = new[]
     {
             S("provider", "推理设备", "CPU", "CPU、CUDA 或 Auto。CUDA 不可用时，仅 Auto 会回退到 CPU。"),
@@ -216,6 +225,8 @@ public static class ExtendedOperatorCatalog {
       "BoundingRect" => "Bounding Rectangle",
       "MinAreaRect" => "Minimum-Area Rectangle",
       "FitEllipse" => "Fit Ellipse",
+      "OverlayContours" => "Draw Contours Overlay",
+      "OverlayEllipse" => "Draw Ellipse Overlay",
       "MinCircle" => "Minimum Enclosing Circle",
       "ConvexHull" => "Convex Hull",
       "ConvexityDefects" => "Convexity Defects",
@@ -396,6 +407,8 @@ internal sealed class ExtendedVisionOperator(string type, IReadOnlyList<PortDefi
       case "Logic.Switch": LogicSwitch(context); break;
       case var collection when collection.StartsWith("Collection.", StringComparison.Ordinal): Collection(context); break;
       case "Draw.Point": case "Draw.Line": case "Draw.Rect": case "Draw.Circle": case "Draw.Text": Draw(context); break;
+      case "Draw.OverlayContours": OverlayContours(context); break;
+      case "Draw.OverlayEllipse": OverlayEllipse(context); break;
       case "AI.Detection": case "AI.Segmentation": case "AI.OCR": case "AI.Anomaly": VisionAiOperator.Execute(type, context); break;
       default: AnnotatedPassThrough(context, $"{type}: preview", declaredOutputs); break;
     }
@@ -412,6 +425,40 @@ internal sealed class ExtendedVisionOperator(string type, IReadOnlyList<PortDefi
 
     return gray;
   }
+  private static void OverlayContours(NodeExecutionContext c) {
+    var source = c.GetInput<Mat>("Image");
+    var contours = c.GetInput<VisionContours>("Contours");
+    int thickness = Math.Max(1, c.GetParameter("thickness", 2));
+    var output = Color(source);
+    foreach (var points in contours.Items) {
+      if (points.Length >= 2) {
+        CvInvoke.Polylines(output, points, false, new MCvScalar(0, 0, 255), thickness);
+      }
+    }
+
+    Put(output, $"Contours drawn: {contours.Items.Count}");
+    c.SetOutput("Image", output);
+  }
+
+  private static void OverlayEllipse(NodeExecutionContext c) {
+    var source = c.GetInput<Mat>("Image");
+    var value = c.GetInput<object>("Ellipse");
+    int thickness = Math.Max(1, c.GetParameter("thickness", 2));
+    var output = Color(source);
+    if (value is RotatedRect rect) {
+      CvInvoke.Ellipse(output, rect, new MCvScalar(0, 0, 255), thickness);
+      Put(output, $"Ellipse: {rect.Size.Width:F1}x{rect.Size.Height:F1}");
+    } else if (value is VisionCircle circle) {
+      CvInvoke.Circle(output, Point.Round(new System.Drawing.PointF((float)circle.X, (float)circle.Y)),
+          (int)Math.Round(circle.Radius), new MCvScalar(0, 0, 255), thickness);
+      Put(output, $"Circle R: {circle.Radius:F1}");
+    } else {
+      throw new InvalidOperationException($"叠加椭圆需要拟合椭圆结果，收到 {value?.GetType().Name ?? "null"}。请把 Contour.FitEllipse 的 Result 端口接入 Ellipse。");
+    }
+
+    c.SetOutput("Image", output);
+  }
+
   private static Mat Color(Mat source) {
     var output = new Mat(); if (source.NumberOfChannels == 1) {
       CvInvoke.CvtColor(source, output, ColorConversion.Gray2Bgr);

@@ -12,11 +12,11 @@ public sealed class AiProviderLifetimeTests {
 
     var first = await lifetime.GetOrCreateAsync("profile", () => {
       factoryCalls++;
-      return Task.FromResult(new AiProviderHandle(provider, null));
+      return Task.FromResult(new AiProviderHandle(provider));
     });
     var second = await lifetime.GetOrCreateAsync("profile", () => {
       factoryCalls++;
-      return Task.FromResult(new AiProviderHandle(new TestProvider("unused"), null));
+      return Task.FromResult(new AiProviderHandle(new TestProvider("unused")));
     });
 
     Assert.Same(first, second);
@@ -32,12 +32,12 @@ public sealed class AiProviderLifetimeTests {
     var replacement = new TestProvider("replacement");
     var lifetime = new AiProviderLifetime();
     await lifetime.GetOrCreateAsync(
-        "previous", () => Task.FromResult(new AiProviderHandle(previous, null)));
+        "previous", () => Task.FromResult(new AiProviderHandle(previous)));
 
     var replacementCreated = false;
     var replaceTask = lifetime.GetOrCreateAsync("replacement", () => {
       replacementCreated = true;
-      return Task.FromResult(new AiProviderHandle(replacement, null));
+      return Task.FromResult(new AiProviderHandle(replacement));
     });
 
     await previous.DisposalStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
@@ -59,7 +59,7 @@ public sealed class AiProviderLifetimeTests {
     public bool Disposed { get; private set; }
     public string ProviderId => id;
     public AiModelProfile Profile { get; } =
-        new(id, id, "model", null, "server");
+        new(id, id, "https://example.test/v1", "test-model");
     public bool SupportsVision => false;
 
     public Task<AiProviderResponse> SendAsync(

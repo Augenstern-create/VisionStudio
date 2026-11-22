@@ -73,7 +73,10 @@ public sealed partial class MainWindow : Window {
     HelpMenuItem.Header = _localization.Text("Toolbar.Help");
     SaveMenuItem.Header = _localization.Text("Toolbar.Save");
     ExportMenuItem.Header = _localization.Text("Toolbar.Export");
+    BatchRunMenuItem.Header = _localization.Text("Toolbar.BatchRun");
+    CancelRunButton.Content = _localization.Text("Toolbar.Cancel");
     SettingsMenuItem.Header = _localization.Text("Toolbar.Settings");
+    ExecutionHistoryMenuItem.Header = _localization.Text("Toolbar.ExecutionHistory");
     CloseFolderMenuItem.Header = _localization.Text("Toolbar.CloseFolder");
     UndoMenuItem.Header = _localization.Text("Toolbar.Undo");
     AutoLayoutMenuItem.Header = _localization.Text("Toolbar.AutoLayout");
@@ -95,6 +98,7 @@ public sealed partial class MainWindow : Window {
     AutomationProperties.SetName(AiPromptTextBox, _localization.Text("Ai.Prompt"));
     AutomationProperties.SetName(AiConversationScroll, _localization.Text("Ai.Conversation"));
     AiSendButton.Content = _localization.Text("Ai.Send");
+    AiStopButton.Content = _localization.Text("Ai.Stop");
     AiApplyButton.Content = _localization.Text("Ai.Apply");
     AiModeHintText.Text = _localization.Text("Ai.SuggestMode");
     Canvas.SelectDownstreamText = _localization.Text("Canvas.SelectDownstream");

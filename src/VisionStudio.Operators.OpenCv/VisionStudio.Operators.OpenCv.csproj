@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\VisionStudio.Core\VisionStudio.Core.csproj" />
+    <ProjectReference Include="..\VisionStudio.Ai.Abstractions\VisionStudio.Ai.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

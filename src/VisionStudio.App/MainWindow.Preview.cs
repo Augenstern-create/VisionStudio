@@ -187,9 +187,19 @@ public sealed partial class MainWindow : Window {
     try {
       await Task.Delay(120, cancellationToken);
       Status(_localization.Format("Status.PreviewLoading", DisplayName(node)));
-      using var result = await new WorkflowExecutor(_registry, _project!.RootPath, new OpenCvProjectCache(_project.RootPath))
-          .ExecuteAsync(_workflow, node.Id, cancellationToken);
+
+      // Operators are CPU-bound native OpenCV calls. Running them on the dispatcher froze the
+      // whole window (see the HoughCircles incident), so the slice executes on the thread pool
+      // with a snapshot workflow and per-node progress.
+      var workflow = SnapshotWorkflow();
+      string rootPath = _project!.RootPath;
+      BeginRun(HasSlowOperator(workflow, node.Id));
+      var executor = new WorkflowExecutor(_registry, rootPath, new OpenCvProjectCache(rootPath)) {
+        Progress = new Progress<WorkflowProgress>(item => ReportRunProgress(item))
+      };
+      using var result = await Task.Run(() => executor.ExecuteAsync(workflow, node.Id, cancellationToken), cancellationToken);
       cancellationToken.ThrowIfCancellationRequested();
+      await RecordExecutionAsync(node, result);
       var descriptor = _registry.Descriptors.Single(x => x.Type == node.Type);
       var imagePort = descriptor.Outputs.FirstOrDefault(x => x.Type == NodeValueType.Mat);
       if (imagePort is null || !result.TryGetOutput<Mat>(node.Id, imagePort.Name, out var mat) || mat is null) {
@@ -218,7 +228,99 @@ public sealed partial class MainWindow : Window {
       string summary = DescribeOutputs(result.GetNodeOutputs(node.Id));
       string outputSummary = summary.Length == 0 ? "" : _localization.Format("Status.OutputSummary", summary);
       Status(_localization.Format("Status.ResultShown", _localization.OperatorName(descriptor), outputSummary, cached, result.Timings.Count, elapsed));
-    } catch (OperationCanceledException) { } catch (Exception ex) { Status(_localization.Format("Status.PreviewFailed", UserError(ex))); }
+    } catch (OperationCanceledException) { Status(_localization.Text("Status.Cancelled")); } catch (Exception ex) { Status(_localization.Format("Status.PreviewFailed", UserError(ex))); } finally { EndRun(); }
+  }
+
+  /// <summary>Deep copy so the thread-pool execution cannot observe edits made while it runs.</summary>
+  private async Task RecordExecutionAsync(WorkflowNode node, WorkflowExecutionResult result) {
+    var history = _executionHistory;
+    if (history is null) {
+      return;
+    }
+
+    try {
+      var outputs = result.GetNodeOutputs(node.Id)
+          .ToDictionary(pair => pair.Key, pair => ExecutionHistoryStore.Summarize(pair.Value), StringComparer.Ordinal);
+      await history.AddAsync(ExecutionHistoryStore.Create(
+          node, outputs, result.Timings.Sum(timing => timing.Duration.TotalMilliseconds)));
+    } catch (Exception) {
+      // History is diagnostic only.
+    }
+  }
+
+  private WorkflowDocument SnapshotWorkflow() {
+    return WorkflowJson.Deserialize(WorkflowJson.Serialize(_workflow));
+  }
+
+  private static readonly string[] SlowOperatorPrefixes = [
+      "LineCircle.Hough", "Locate.SIFT", "Locate.ORB", "Locate.FeatureMatch", "Locate.TemplateMatch",
+      "Locate.MultiTemplate", "Locate.FlannMatcher", "Locate.BFMatcher", "Transform.DFT"
+  ];
+
+  private static bool HasSlowOperator(WorkflowDocument workflow, string targetNodeId) {
+    var types = workflow.Nodes.ToDictionary(node => node.Id, node => node.Type, StringComparer.Ordinal);
+    var slice = new HashSet<string>(StringComparer.Ordinal) { targetNodeId };
+    bool added = true;
+    while (added) {
+      added = false;
+      foreach (var connection in workflow.Connections) {
+        if (slice.Contains(connection.ToNode) && slice.Add(connection.FromNode)) {
+          added = true;
+        }
+      }
+    }
+
+    return slice.Any(id => types.TryGetValue(id, out string? type) &&
+        SlowOperatorPrefixes.Any(prefix => type.StartsWith(prefix, StringComparison.Ordinal)));
+  }
+
+  private void BeginRun(bool slow) {
+    _runStarted = DateTime.UtcNow;
+    _runIndex = 0;
+    _runTotal = 0;
+    _runNodeLabel = null;
+    if (CancelRunButton is not null) {
+      CancelRunButton.IsVisible = true;
+    }
+
+    if (slow) {
+      Status(_localization.Text("Status.SlowOperator"));
+    }
+
+    _runTimer.Start();
+  }
+
+  private void EndRun() {
+    _runTimer.Stop();
+    if (CancelRunButton is not null) {
+      CancelRunButton.IsVisible = false;
+    }
+  }
+
+  private void ReportRunProgress(WorkflowProgress progress) {
+    _runIndex = progress.Index;
+    _runTotal = progress.Total;
+    _runNodeLabel = _registry.TryGetDescriptor(progress.NodeType, out var descriptor)
+        ? _localization.OperatorName(descriptor)
+        : progress.NodeType;
+  }
+
+  private void RefreshRunStatus() {
+    if (_runTotal == 0 || _runNodeLabel is null) {
+      double waited = RunElapsed;
+      Status(_localization.Format("Status.RunningIdle", waited));
+      return;
+    }
+
+    Status(_localization.Format("Status.Running", _runIndex, _runTotal, _runNodeLabel, RunElapsed));
+  }
+
+  private double RunElapsed => (DateTime.UtcNow - _runStarted).TotalSeconds;
+
+  private void CancelRun_Click(object? sender, RoutedEventArgs e) {
+    CancelPreview();
+    EndRun();
+    Status(_localization.Text("Status.Cancelled"));
   }
 
   private void ReplacePreview(Bitmap bitmap, string digest) {

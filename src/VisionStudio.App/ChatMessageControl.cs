@@ -30,7 +30,7 @@ public sealed class ChatMessageControl : ContentControl {
     Message = message ?? "";
     MessageParts = ParseMessage(Message);
     bool isUser = role.Equals("user", StringComparison.OrdinalIgnoreCase);
-    AutomationProperties.SetName(this, $"{(isUser ? userLabel : assistantLabel)}: {Message}");
+    AutomationProperties.SetName(this, $"{(isUser ? userLabel : assistantLabel)}: {ChatMarkdown.ToPlainText(Message)}");
     HorizontalAlignment = isUser ? HorizontalAlignment.Right : HorizontalAlignment.Stretch;
     MaxWidth = 560;
 
@@ -112,11 +112,25 @@ public sealed class ChatMessageControl : ContentControl {
     return root;
   }
 
-  private SelectableTextBlock BuildText(string text) {
-    var block = new SelectableTextBlock { Text = text, TextWrapping = TextWrapping.Wrap };
-    block.Classes.Add("chatText");
-    _selectableBlocks.Add(block);
-    return block;
+  private static readonly bool MarkdownEnabled = true;
+
+  private Control BuildText(string text) {
+    void Register(SelectableTextBlock block) => _selectableBlocks.Add(block);
+    if (!MarkdownEnabled) {
+      var plain = new SelectableTextBlock { Text = text, TextWrapping = TextWrapping.Wrap };
+      plain.Classes.Add("chatText");
+      Register(plain);
+      return plain;
+    }
+
+    try {
+      return ChatMarkdown.Render(text, Register);
+    } catch (Exception) {
+      var plain = new SelectableTextBlock { Text = text, TextWrapping = TextWrapping.Wrap };
+      plain.Classes.Add("chatText");
+      Register(plain);
+      return plain;
+    }
   }
 
   private Control BuildCodeBlock(ChatMessagePart part, string copyCodeLabel) {

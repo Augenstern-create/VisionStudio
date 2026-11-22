@@ -203,6 +203,14 @@
     <Style Selector="Border.chatBubble.assistant">
       <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
     </Style>
+    <Style Selector="Border.planCard">
+      <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Padding" Value="10,8" />
+      <Setter Property="Margin" Value="0,3,0,1" />
+    </Style>
     <Style Selector="SelectableTextBlock.chatText">
       <Setter Property="FontSize" Value="11" />
       <Setter Property="LineHeight" Value="18" />

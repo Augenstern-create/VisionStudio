@@ -825,3 +825,48 @@ select:focus-visible {
 :root .ports-column {
   min-width: 0;
 }
+
+/* AI assistant drawer (web) */
+.ai-panel {
+  position: fixed;
+  top: 48px;
+  right: 0;
+  bottom: 22px;
+  width: min(420px, 92vw);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-left: 1px solid var(--border, #3c3c3c);
+  background: var(--panel, #202020);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.35);
+}
+.ai-panel.hidden { display: none; }
+.ai-controls select { width: 100%; }
+.ai-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 2px;
+}
+.ai-message {
+  border: 1px solid var(--border, #3c3c3c);
+  border-radius: 7px;
+  padding: 8px 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.ai-message.user { background: rgba(76, 154, 255, 0.14); }
+.ai-message.assistant { background: rgba(255, 255, 255, 0.04); }
+.ai-message.error { border-color: #b4433a; background: rgba(180, 67, 58, 0.12); }
+.ai-message .ai-meta { display: block; font-size: 10px; opacity: 0.6; margin-bottom: 4px; }
+.ai-message .ai-reasoning { display: block; opacity: 0.6; font-size: 11px; margin-bottom: 6px; }
+.ai-compose { display: flex; flex-direction: column; gap: 6px; }
+.ai-compose textarea { width: 100%; resize: vertical; }
+.ai-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.ai-actions .hidden { display: none; }

@@ -11,6 +11,8 @@
     <ProjectReference Include="..\VisionStudio.Core\VisionStudio.Core.csproj" />
     <ProjectReference Include="..\VisionStudio.Operators.OpenCv\VisionStudio.Operators.OpenCv.csproj" />
     <ProjectReference Include="..\VisionStudio.CodeGen\VisionStudio.CodeGen.csproj" />
+    <ProjectReference Include="..\VisionStudio.Ai\VisionStudio.Ai.csproj" />
+    <ProjectReference Include="..\VisionStudio.Ai.Abstractions\VisionStudio.Ai.Abstractions.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" Condition="'$(RuntimeIdentifier)' == 'ubuntu-x64'" />

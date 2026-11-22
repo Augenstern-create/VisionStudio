@@ -95,6 +95,9 @@ public sealed record WorkflowExternalOutput(
     string Port,
     object Value);
 
+/// <summary>Per-node progress emitted while a workflow slice executes, in topological order.</summary>
+public sealed record WorkflowProgress(int Index, int Total, string NodeId, string NodeType, TimeSpan Duration, bool FromCache);
+
 public interface INodeOutputCache {
   string GetExternalFingerprint(WorkflowNode node, string workingDirectory);
   bool TryRestore(WorkflowNode node, OperatorDescriptor descriptor, string cacheKey, out IReadOnlyDictionary<string, object> outputs);
@@ -154,6 +157,9 @@ public sealed class WorkflowExecutionResult : IDisposable {
 
 public sealed class WorkflowExecutor(OperatorRegistry registry, string? workingDirectory = null, INodeOutputCache? cache = null) {
   private readonly string _workingDirectory = Path.GetFullPath(workingDirectory ?? Directory.GetCurrentDirectory());
+
+  /// <summary>Optional per-node progress sink. Callbacks come from the executing thread.</summary>
+  public IProgress<WorkflowProgress>? Progress { get; set; }
   public Task<WorkflowExecutionResult> ExecuteAsync(WorkflowDocument workflow, CancellationToken cancellationToken = default) {
     return ExecuteAsync(workflow, targetNodeId: null, [], cancellationToken);
   }
@@ -183,6 +189,8 @@ public sealed class WorkflowExecutor(OperatorRegistry registry, string? workingD
             group => group.ToDictionary(output => output.Port, output => output.Value),
             StringComparer.Ordinal);
     try {
+      int completed = 0;
+      int total = validation.TopologicalOrder.Count;
       foreach (var node in validation.TopologicalOrder) {
         cancellationToken.ThrowIfCancellationRequested();
         registry.TryGetDescriptor(node.Type, out var descriptor);
@@ -204,6 +212,7 @@ public sealed class WorkflowExecutor(OperatorRegistry registry, string? workingD
           }
 
           timings.Add(new NodeTiming(node.Id, TimeSpan.Zero, FromCache: true));
+          Progress?.Report(new WorkflowProgress(++completed, total, node.Id, node.Type, TimeSpan.Zero, FromCache: true));
           continue;
         }
         var inputs = inbound
@@ -224,6 +233,7 @@ public sealed class WorkflowExecutor(OperatorRegistry registry, string? workingD
         }
         stopwatch.Stop();
         timings.Add(new NodeTiming(node.Id, stopwatch.Elapsed));
+        Progress?.Report(new WorkflowProgress(++completed, total, node.Id, node.Type, stopwatch.Elapsed, FromCache: false));
         foreach (var output in context.Outputs) {
           values.Add((node.Id, output.Key), output.Value);
         }

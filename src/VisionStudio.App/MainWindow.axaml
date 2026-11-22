@@ -96,6 +96,7 @@
               <MenuItem x:Name="FileMenuItem" Classes="topMenuItem">
                 <MenuItem x:Name="SaveMenuItem" Click="Save_Click" />
                 <MenuItem x:Name="ExportMenuItem" Click="Export_Click" />
+                <MenuItem x:Name="BatchRunMenuItem" Click="BatchRun_Click" />
                 <Separator />
                 <MenuItem x:Name="SettingsMenuItem" Click="Settings_Click" />
                 <Separator />
@@ -107,6 +108,7 @@
               </MenuItem>
               <MenuItem x:Name="ViewMenuItem" Classes="topMenuItem">
                 <MenuItem x:Name="HistoryMenuItem" ToggleType="CheckBox" IsChecked="False" Click="HistoryMenuItem_Click" />
+                <MenuItem x:Name="ExecutionHistoryMenuItem" Click="ExecutionHistory_Click" />
                 <Separator />
                 <MenuItem x:Name="LanguageMenuItem">
                   <MenuItem x:Name="ChineseMenuItem" Tag="zh-CN" ToggleType="Radio" Click="LanguageMenuItem_Click" />
@@ -177,10 +179,11 @@
           </ScrollViewer>
           <TextBox Grid.Row="5" x:Name="AiPromptTextBox" Margin="10,6" MinHeight="76" MaxHeight="150" AcceptsReturn="True" TextWrapping="Wrap"
                    DragDrop.AllowDrop="True" DragDrop.DragOver="AiPrompt_DragOver" DragDrop.Drop="AiPrompt_Drop" />
-          <Grid Grid.Row="6" ColumnDefinitions="*,Auto,Auto" Margin="10,2,10,10" ColumnSpacing="6">
+          <Grid Grid.Row="6" ColumnDefinitions="*,Auto,Auto,Auto" Margin="10,2,10,10" ColumnSpacing="6">
             <TextBlock x:Name="AiModeHintText" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
             <Button x:Name="AiSendButton" Grid.Column="1" Click="AiSend_Click" />
-            <Button x:Name="AiApplyButton" Grid.Column="2" Click="AiApply_Click" IsEnabled="False" />
+            <Button x:Name="AiStopButton" Grid.Column="2" Click="AiStop_Click" IsEnabled="False" IsVisible="False" />
+            <Button x:Name="AiApplyButton" Grid.Column="3" Click="AiApply_Click" IsEnabled="False" />
           </Grid>
         </Grid>
       </Border>
@@ -267,7 +270,11 @@
                        MaxWidth="260" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
           </StackPanel>
           <TextBlock Grid.Column="1" x:Name="StatusText" FontSize="11" Foreground="White" VerticalAlignment="Center" Margin="18,0" TextTrimming="CharacterEllipsis" />
-          <TextBlock Grid.Column="2" Text="OpenCV  •  .NET 9" FontSize="11" Foreground="White" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <Button x:Name="CancelRunButton" IsVisible="False" Click="CancelRun_Click" FontSize="10"
+                    Padding="8,1" MinHeight="20" VerticalAlignment="Center" />
+            <TextBlock Text="OpenCV  •  .NET 9" FontSize="11" Foreground="White" VerticalAlignment="Center" />
+          </StackPanel>
         </Grid>
       </Border>
     </Grid>

@@ -83,6 +83,7 @@ public sealed partial class MainWindow : Window {
     EditorView.IsVisible = false;
     ReleasePreviewsAfterNavigation();
     _project = null;
+    _executionHistory = null;
     await DetachAutomationSessionAsync();
     _workflow = new WorkflowDocument();
     Canvas.Workflow = _workflow;
@@ -147,6 +148,8 @@ public sealed partial class MainWindow : Window {
   private async Task LoadProjectAsync(string path) {
     try {
       _project = await _projects.OpenAsync(path);
+      _executionHistory = new ExecutionHistoryStore(_project.RootPath);
+      await _executionHistory.LoadAsync();
       await new RecentProjectCatalog().RecordAsync(_project);
       _workflow = await _projects.LoadWorkflowAsync(_project);
       ResetUndoHistory();

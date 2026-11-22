@@ -28,7 +28,7 @@
     <ProjectReference Include="..\..\src\VisionStudio.Web\VisionStudio.Web.csproj" />
     <ProjectReference Include="..\..\src\VisionStudio.Ai.Abstractions\VisionStudio.Ai.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\VisionStudio.Ai\VisionStudio.Ai.csproj" />
-    <ProjectReference Include="..\..\plugins\VisionStudio.Ai.LlamaCpp\VisionStudio.Ai.LlamaCpp.csproj" />
+
   </ItemGroup>
 
 </Project>

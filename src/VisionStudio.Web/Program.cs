@@ -41,6 +41,7 @@ if (string.IsNullOrWhiteSpace(configuredToken) && !app.Environment.IsDevelopment
 
 app.UseVisionStudioPipeline(configuredToken);
 app.MapVisionStudioApi();
+app.MapWebAiApi();
 app.Run();
 
 public partial class Program;

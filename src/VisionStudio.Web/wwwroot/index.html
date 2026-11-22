@@ -117,6 +117,7 @@
               撤销
             </button>
             <button id="layoutButton" data-i18n="layout">自动排版</button>
+            <button id="aiToggle" title="AI 助手">AI 助手</button>
             <button id="exportButton" data-i18n="export">导出 C#</button>
             <button id="inspectorToggle" class="mobile-only">属性</button>
           </div>
@@ -140,6 +141,23 @@
             </div>
           </div>
         </section>
+        <aside id="aiPanel" class="ai-panel hidden" aria-label="AI 助手">
+          <div class="panel-title">
+            <strong>AI 助手</strong><span class="spacer"></span>
+            <button id="aiClose" class="mobile-close">×</button>
+          </div>
+          <div class="ai-controls">
+            <select id="aiModel" aria-label="模型"></select>
+          </div>
+          <div id="aiMessages" class="ai-messages" aria-live="polite"></div>
+          <div class="ai-compose">
+            <textarea id="aiPrompt" rows="3" placeholder="问点什么，或描述你想搭的流程…"></textarea>
+            <div class="ai-actions">
+              <button id="aiSend">发送</button>
+              <button id="aiStop" class="hidden">停止</button>
+            </div>
+          </div>
+        </aside>
         <aside id="inspector" class="inspector panel">
           <div class="panel-title">
             <strong data-i18n="resultAndProperties">结果与属性</strong
@@ -203,5 +221,6 @@
     <script src="workflow-canvas.js" defer></script>
     <script src="result-inspector.js" defer></script>
     <script src="app.js" defer></script>
+    <script src="ai-panel.js" defer></script>
   </body>
 </html>

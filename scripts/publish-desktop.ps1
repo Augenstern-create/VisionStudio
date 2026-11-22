@@ -78,8 +78,7 @@ This is a self-contained release; a separate .NET installation is not required.
 Projects use the .vstudio extension. Keep all files in this directory together.
 VisionStudio is the workflow editor. VisionStudio.Runtimes.App is the project runtime for single-frame and continuous inspection. VisionStudio.Cli is the command-line validation, workflow run and export tool.
 AI models are configured under the installation directory's config folder through File > Settings. The left activity bar switches between Operators and AI Chat.
-Local AI is optional. Install a provider plugin under the installation directory's plugins folder, or configure a remote OpenAI-compatible endpoint.
-AI models, llama.cpp, CUDA libraries, and provider plugins are downloaded separately and are not embedded in this package.
+AI features use remote OpenAI-compatible models only; configure endpoints under File > Settings. No model files, llama.cpp runtime or CUDA libraries are bundled or downloaded.
 "@
     if ($Rid -eq 'ubuntu-x64') {
         $readme += @"

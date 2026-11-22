@@ -36,9 +36,15 @@ public sealed partial class MainWindow : Window {
   private readonly HashSet<Bitmap> _retiredPreviews = new(ReferenceEqualityComparer.Instance);
   private CancellationTokenSource? _autosaveCancellation;
   private CancellationTokenSource? _previewCancellation;
+  private readonly DispatcherTimer _runTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
+  private DateTime _runStarted;
+  private int _runIndex;
+  private int _runTotal;
+  private string? _runNodeLabel;
   private double _previewZoom = 1;
   private bool _previewFit = true;
   private WorkflowAutomationSession? _automation;
+  private ExecutionHistoryStore? _executionHistory;
   private readonly AiModelProfileStore _aiModelStore = new();
   private readonly AiConversationContextStore _aiContextStore = new();
   private readonly List<AiModelProfile> _aiProfiles = [];
@@ -58,6 +64,8 @@ public sealed partial class MainWindow : Window {
 
   public MainWindow(string? initialProjectPath) {
     InitializeComponent();
+    _runTimer.Tick += (_, _) => RefreshRunStatus();
+    _aiTimer.Tick += OnAiTick;
     Canvas.Registry = _registry;
     Canvas.DisplayNameSelector = descriptor => _localization.OperatorName(descriptor);
     Canvas.PortNameSelector = port => _localization.IsChinese ? port.DisplayName ?? port.Name : port.Name;
